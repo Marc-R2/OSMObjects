@@ -579,11 +579,20 @@ function parseOSM(data)
 			}
 
 		} else if (tagAmenity == "bench") {
+			let EleText = "<b>" + i18next.t("bench") + "</b><br><div class='infoblock'><table>";
+			$(this).find('tag').each(function(){
+				let EleKey = $(this).attr("k");
+				let EleValue = $(this).attr("v");
+				EleText += "<tr><td><b>" + EleKey + ": </b></td><td>" + EleValue + "</td></tr>";
+			});
+			EleText += "</table></div><br><a href='#' onclick='openinJOSM(\""+EleType+"\",\""+EleID+"\")'>edit in JOSM</a> | <a href='https://www.openstreetmap.org/"+EleType+"/"+EleID+"'>show in OSM</a>";
+
 			let markerLocation = new L.LatLng(EleLat, EleLon);
 			let Icon = getMarkerIcon(L, "bench");
 			let marker = new L.Marker(markerLocation, {
 				icon: Icon
 			});
+			marker.bindPopup(EleText);
 			BenchesLayer.addLayer(marker);
 		} else if (tagLit == "no" || tagLit == "disused") {
 			// Draw ways, which have no popup
