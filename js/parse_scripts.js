@@ -5,11 +5,12 @@ function MoveCall(action) { //action: 0: map moved, 1: high zoom layer added, 2:
 	loadXML(lefttop.lat,lefttop.lng,rightbottom.lat,rightbottom.lng, action);
 }
 
-function loadXML(lat1,lon1,lat2,lon2, action) { //action: 0: map moved, 1: high zoom layer added, 2: low zoom layer added, 3: layer removed, 4: streetlights layer removed, 5: language updated
+function loadXML(lat1, lon1, lat2, lon2, action) { //action: 0: map moved, 1: high zoom layer added, 2: low zoom layer added, 3: layer removed, 4: streetlights layer removed, 5: language updated
 
-	let hasHighZoomLayer = false, hasLowZoomLayer = false, zoomWarning = 1;
+    let hasHighZoomLayer = false, hasLowZoomLayer = false, zoomWarning = 1;
+    let hasLightLayer = map.hasLayer(StreetLightsLayer) || map.hasLayer(AviationLayer) || map.hasLayer(LitStreetsLayer) || map.hasLayer(UnLitStreetsLayer) || map.hasLayer(StreetLightsLowZoomLayer);
 
-	// Special case: Low Zoom data loaded once
+    // Special case: Low Zoom data loaded once
 	if (g_showStreetLightsLowZoomOnce && map.getZoom() < MIN_ZOOM_LOW_ZOOM) {
 		hasHighZoomLayer = false;
 		hasLowZoomLayer = false;
@@ -70,11 +71,16 @@ function loadXML(lat1,lon1,lat2,lon2, action) { //action: 0: map moved, 1: high 
 	}
 	if(!hasHighZoomLayer && !hasLowZoomLayer && zoomWarning!=4) {
 		// reset loading counter
-		loadingcounter = 0;
+		loadingcounter = 0;		
 		g_showData = false;
 		//update opacity
-		current_layer.setOpacity(g_opacityNoData);
-		$("#opacity_slider").slider("option", "value", g_opacityNoData * 100);
+		if (hasLightLayer) {
+			current_layer.setOpacity(g_opacityNoData);
+			$("#opacity_slider").slider("option", "value", g_opacityNoData * 100);
+		} else {
+			current_layer.setOpacity(1); // Full opacity
+			$("#opacity_slider").slider("option", "value", 100);
+		}
 	}
 
 	//handle zoom warning
@@ -114,8 +120,13 @@ function loadXML(lat1,lon1,lat2,lon2, action) { //action: 0: map moved, 1: high 
 	} else {
 		g_showData = true;
 		$( "#zoomwarning_cont" ).fadeOut(500);
-		current_layer.setOpacity(g_opacityHasData);
-		$("#opacity_slider").slider("option", "value", g_opacityHasData * 100);
+		if (hasLightLayer) {
+			current_layer.setOpacity(g_opacityHasData);
+			$("#opacity_slider").slider("option", "value", g_opacityHasData * 100);
+		} else {
+			current_layer.setOpacity(1); // Full opacity
+			$("#opacity_slider").slider("option", "value", 100);
+		}
 	}
 
 }
