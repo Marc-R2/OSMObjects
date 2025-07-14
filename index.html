@@ -92,6 +92,10 @@
 				maxZoom : 19,
 				minZoom : MIN_ZOOM
 			});
+			var BenchesLayer = new L.LayerGroup([],{
+				maxZoom : 19,
+				minZoom : MIN_ZOOM
+			});
 
 			var OverpassAttrib = 'Data via <a href="http://www.overpass-api.de/">Overpass API</a>';
 			
@@ -126,7 +130,8 @@
 				"<span id='layer_street_lights'>Street Lights</span>": StreetLightsLayer,
 				"<span id='layer_aviation_lights'>Aviation Lights</span>": AviationLayer,
 				"<span id='layer_lit_streets'>Lit Streets</span>": LitStreetsLayer,
-				"<span id='layer_unlit_streets'>Unlit Streets</span>": UnLitStreetsLayer
+				"<span id='layer_unlit_streets'>Unlit Streets</span>": UnLitStreetsLayer,
+				"<span id='layer_benches'>Benches</span>": BenchesLayer
 			};
 
 			// add locate control:			
@@ -191,6 +196,7 @@
 				map.addLayer(UnLitStreetsLayer);
 			}
 
+			map.addLayer(BenchesLayer);
 			
 			//Trigger reload when layers are added or removed
 			StreetLightsLowZoomLayer.on('add',function(){MoveCall(2);});
@@ -203,6 +209,8 @@
 			LitStreetsLayer.on('remove',function(){MoveCall(3);});
 			UnLitStreetsLayer.on('add',function(){MoveCall(1);});
 			UnLitStreetsLayer.on('remove',function(){MoveCall(3);});
+			BenchesLayer.on('add',function(){MoveCall(1);});
+			BenchesLayer.on('remove',function(){MoveCall(3);});
 			
 			//Permalink
 			var hash = new L.Hash(map);

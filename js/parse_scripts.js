@@ -6,9 +6,9 @@ function MoveCall(action) { //action: 0: map moved, 1: high zoom layer added, 2:
 }
 
 function loadXML(lat1,lon1,lat2,lon2, action) { //action: 0: map moved, 1: high zoom layer added, 2: low zoom layer added, 3: layer removed, 4: streetlights layer removed, 5: language updated
-	
+
 	let hasHighZoomLayer = false, hasLowZoomLayer = false, zoomWarning = 1;
-	
+
 	// Special case: Low Zoom data loaded once
 	if (g_showStreetLightsLowZoomOnce && map.getZoom() < MIN_ZOOM_LOW_ZOOM) {
 		hasHighZoomLayer = false;
@@ -17,15 +17,15 @@ function loadXML(lat1,lon1,lat2,lon2, action) { //action: 0: map moved, 1: high 
 	} else {
 		if (map.getZoom() >= MIN_ZOOM) {
 			zoomWarning = 0
-			
-			if (map.hasLayer(StreetLightsLayer) || map.hasLayer(AviationLayer) || map.hasLayer(LitStreetsLayer) || map.hasLayer(UnLitStreetsLayer)) {
+
+			if (map.hasLayer(StreetLightsLayer) || map.hasLayer(AviationLayer) || map.hasLayer(LitStreetsLayer) || map.hasLayer(UnLitStreetsLayer) || map.hasLayer(BenchesLayer)) {
 				if (!map.hasLayer(StreetLightsLayer) && map.hasLayer(StreetLightsLowZoomLayer)) {
 					hasLowZoomLayer = true;
 				} else {
 					hasLowZoomLayer = false;
 				}
 				hasHighZoomLayer = true;
-			} else if (map.hasLayer(StreetLightsLowZoomLayer)) {  
+			} else if (map.hasLayer(StreetLightsLowZoomLayer)) {
 				hasHighZoomLayer = false;
 				hasLowZoomLayer = true;
 			} else { // no map layers loaded
@@ -35,7 +35,7 @@ function loadXML(lat1,lon1,lat2,lon2, action) { //action: 0: map moved, 1: high 
 			}
 		} else {
 			hasLowZoomLayer = false;
-			if (map.hasLayer(StreetLightsLowZoomLayer)) { 
+			if (map.hasLayer(StreetLightsLowZoomLayer)) {
 				if (map.getZoom() >= MIN_ZOOM_LOW_ZOOM) {
 					hasLowZoomLayer = true;
 					zoomWarning = 0;
@@ -59,7 +59,7 @@ function loadXML(lat1,lon1,lat2,lon2, action) { //action: 0: map moved, 1: high 
 	if (hasLowZoomLayer && (action == 0 || action == 2 || action == 4)) {
 		loadDataLowZoom('[bbox:' + lat2 + ',' + lon1 + ',' + lat1 + ',' + lon2 + '];');
 	}
-	
+
 	//remove data:
 	if (!hasHighZoomLayer) {
 		parseOSM(false);
@@ -70,13 +70,13 @@ function loadXML(lat1,lon1,lat2,lon2, action) { //action: 0: map moved, 1: high 
 	}
 	if(!hasHighZoomLayer && !hasLowZoomLayer && zoomWarning!=4) {
 		// reset loading counter
-		loadingcounter = 0;		
+		loadingcounter = 0;
 		g_showData = false;
 		//update opacity
 		current_layer.setOpacity(g_opacityNoData);
-		$("#opacity_slider").slider("option", "value", g_opacityNoData * 100);	
+		$("#opacity_slider").slider("option", "value", g_opacityNoData * 100);
 	}
-	
+
 	//handle zoom warning
 	if (zoomWarning)
 	{
@@ -86,7 +86,7 @@ function loadXML(lat1,lon1,lat2,lon2, action) { //action: 0: map moved, 1: high 
 			textZoom = i18next.t("zoomtext_" + zoomWarning);
 		}
 		$( "#zoomtext" ).text(textZoom)
-		
+
 		//show load update and clear low zoom data buttons
 		if (zoomWarning == 3) {
 			$( "#zoomtext" ).show();
@@ -99,17 +99,17 @@ function loadXML(lat1,lon1,lat2,lon2, action) { //action: 0: map moved, 1: high 
 			$( "#load_lowzoom_data" ).hide();
 			$( "#update_lowzoom_data" ).show();
 			$( "#clear_lowzoom_data" ).show();
-			
+
 		} else {
 			$( "#zoomtext" ).show();
 			$( "#load_lowzoom_data" ).hide();
 			$( "#update_lowzoom_data" ).hide();
 			$( "#clear_lowzoom_data" ).hide();
-			
+
 		}
-		
+
 		// fade in zoom warning
-		$( "#zoomwarning_cont" ).fadeIn(500);	
+		$( "#zoomwarning_cont" ).fadeIn(500);
 
 	} else {
 		g_showData = true;
@@ -117,24 +117,24 @@ function loadXML(lat1,lon1,lat2,lon2, action) { //action: 0: map moved, 1: high 
 		current_layer.setOpacity(g_opacityHasData);
 		$("#opacity_slider").slider("option", "value", g_opacityHasData * 100);
 	}
-	
+
 }
 
 function loadLowZoomDataOnce() {
-	
+
 	g_showStreetLightsLowZoomOnce = true;
 	g_showData = true;
 	let coords = map.getBounds();
 	let lefttop = coords.getNorthWest(), rightbottom = coords.getSouthEast();
 	let lat1 = lefttop.lat, lon1 = lefttop.lng, lat2 = rightbottom.lat, lon2 = rightbottom.lng;
-	
+
 	map.addLayer(StreetLightsLowZoomLayer);
 	loadDataLowZoom('[bbox:' + lat2 + ',' + lon1 + ',' + lat1 + ',' + lon2 + '];');
-	
+
 	$( "#zoomwarning_cont" ).fadeOut(500);
 	current_layer.setOpacity(g_opacityHasData);
 	$("#opacity_slider").slider("option", "value", g_opacityHasData * 100);
-}	
+}
 
 function clearLowZoomData() {
 	g_showStreetLightsLowZoomOnce = false;
@@ -152,6 +152,10 @@ function loadData(bbox) {
 	//CrossoverAPI XML request
 	// Street Light query
 	XMLRequestText = bbox + '( node["highway"="street_lamp"]; node["light_source"]; node["tower:type"="lighting"]; node["aeroway"="navigationaid"];'
+
+	 	if (map.hasLayer(BenchesLayer)) {
+		XMLRequestText += 'node["amenity"="bench"];'
+	}
 
 	today = new Date();
 	if (today.getMonth() == 11) { // show christmas trees only in December
@@ -175,7 +179,7 @@ function loadData(bbox) {
 	}
 
 	RequestURL = RequestProtocol + "overpass-api.de/api/interpreter?data=" + XMLRequestText;
-	
+
 	//AJAX REQUEST
 	$.ajax({
 		url: RequestURL,
@@ -191,7 +195,7 @@ function loadData(bbox) {
 			parseOSM(data);
 		},
 		error: function(jqXHR, textStatus, errorThrown){
-			
+
 			if( i18next.isInitialized) {
 				if (textStatus == "timeout" || textStatus == "error" || textStatus == "abort" || textStatus == "parseerror") {
 					textStatus_value = i18next.t("ajaxerror_" + textStatus);
@@ -201,7 +205,7 @@ function loadData(bbox) {
 			} else { // fallback in case i18next is not initalized yet.
 				textStatus_value = "Error while loading data";
 			}
-			
+
 			$( "#loading" ).attr("class", "error");
 			$( "#loading_icon" ).attr("class", "loading_error")
 			$( "#loading_text" ).html("&nbsp;" + textStatus_value)
@@ -228,7 +232,7 @@ function loadDataLowZoom(bbox)
 
 	XMLRequestTextLowZoom = bbox + '( node["highway"="street_lamp"]; node["light_source"];); out skel;'
 	RequestURLlowZoom = RequestProtocol + "overpass-api.de/api/interpreter?data=" + XMLRequestTextLowZoom;
-	
+
 	//AJAX REQUEST
 	$.ajax({
 		url: RequestURLlowZoom,
@@ -244,9 +248,9 @@ function loadDataLowZoom(bbox)
 			parseOSMlowZoom(data);
 		},
 		error: function(jqXHR, textStatus, errorThrown) {
-			
+
 			if (i18next.isInitialized) {
-					
+
 				if (textStatus == "timeout" || textStatus == "error" || textStatus == "abort" || textStatus == "parseerror") {
 					textStatus_value = i18next.t("ajaxerror_" + textStatus);
 				} else {
@@ -255,7 +259,7 @@ function loadDataLowZoom(bbox)
 			} else { // fallback in case i18next is not initalized yet.
 				textStatus_value = "Error while loading data";
 			}
-			
+
 			$( "#loading" ).attr("class", "error");
 			$( "#loading_icon" ).attr("class", "loading_error")
 			$( "#loading_text" ).html("&nbsp;" + textStatus_value)
@@ -274,6 +278,7 @@ function parseOSM(data)
 	AviationLayer.clearLayers();
 	LitStreetsLayer.clearLayers();
 	UnLitStreetsLayer.clearLayers();
+	BenchesLayer.clearLayers();
 
 	$(data).find('node,way').each(function() {
 		let EleID = $(this).attr("id");
@@ -298,7 +303,7 @@ function parseOSM(data)
 		}
 
 		let EleText = "";
-		let tagHighway, tagAeroway, tagOperator, tagRef, tagStartDate, tagManufacturer, tagModel, tagHeight, tagWidth, tagLightColour, tagLightCount, tagLightDirection, tagLightFlash, tagLightHeight, tagLightLit, tagLightShape, tagLightMethod, tagLampMount, tagLightSource, tagNavigationaid, tagLit, tagArea;
+		let tagHighway, tagAeroway, tagOperator, tagRef, tagStartDate, tagManufacturer, tagModel, tagHeight, tagWidth, tagLightColour, tagLightCount, tagLightDirection, tagLightFlash, tagLightHeight, tagLightLit, tagLightShape, tagLightMethod, tagLampMount, tagLightSource, tagNavigationaid, tagLit, tagArea, tagAmenity;
 
 		$(this).find('tag').each(function(){
 			let EleKey = $(this).attr("k");
@@ -356,6 +361,8 @@ function parseOSM(data)
 				tagArea = EleValue;
 			} else if (EleKey == "lit") {
 				tagLit = EleValue
+			} else if (EleKey == "amenity") {
+				tagAmenity = EleValue
 			}
 
 		});
@@ -370,15 +377,15 @@ function parseOSM(data)
 				tagNavigationaid = "unknown";
 			}
 		}
-		
+
 		if (!tagLightCount) {
 			tagLightCount = 1;
 		}
 
 		if (tagLightSource) {
-			
+
 			let textLightType = "", textStartDate = "", textManufacturer = "", textModel = "", textHeight = "", textLightHeight = "", textWidth = "", textLightMethod = "", textLampMount = "", textLightLit = "", textLightCount = "";
-			
+
 			if(tagLightSource == "lantern") {
 				textLightType = i18next.t("lamp_lantern");
 			} else if(tagLightSource == "floodlight") {
@@ -416,7 +423,7 @@ function parseOSM(data)
 			if (!tagOperator) {
 				tagOperator = "<i>" + i18next.t("unknown") + "</i>";
 			}
-			
+
 
 			//Tags that are only shown when available
 			if (tagStartDate) {
@@ -449,7 +456,7 @@ function parseOSM(data)
 			if (tagLightCount > 1) {
 				textLightCount = "<tr><td><b>" + i18next.t("lamp_count") + ": </b></td><td>" + tagLightCount + "</td></tr>";
 			}
-			
+
 			// Restrict number of shown light sources for single points to reduce clutter
 			if (tagLightCount > 1) {
 				tagLightCount = Math.min(tagLightCount, LIGHT_COUNT_MAX)
@@ -474,7 +481,7 @@ function parseOSM(data)
 				"</table></div>" +
 				"<br><a href='#' onclick='openinJOSM(\""+EleType+"\",\""+EleID+"\")'>edit in JOSM</a> | <a href='https://www.openstreetmap.org/"+EleType+"/"+EleID+"'>show in OSM</a>"
 				;
-			
+
 			if (!tagLightHeight && tagHeight) {
 				tagLightHeight = tagHeight;
 			}
@@ -487,7 +494,7 @@ function parseOSM(data)
 				if (tagRef) {
 					refArray = tagRef.split(";")
 				}
- 
+
 				// Handle lights with only one direction given
 				let isSingleDir = false;
 				let posDirection0 = 0;
@@ -496,8 +503,8 @@ function parseOSM(data)
 					isSingleDir = true;
 					posDirection0 = lightDirectionArray[0] // keep first value in memory
 				}
-				
-				let i = tagLightCount; 
+
+				let i = tagLightCount;
 				let j = 0;
 				let posDirection = new Array();
 				while (i > 0) {
@@ -505,7 +512,7 @@ function parseOSM(data)
 					// Positioning of multiple lights at same spot (tagLightCount > 1)
 					if (tagLightCount > 1) {
 						let posDistance = 0;
-						if (isSingleDir) { //only one direction value given -> assume all lights are parallel:		
+						if (isSingleDir) { //only one direction value given -> assume all lights are parallel:
 							posDirection[j] = posDirection0 * 1 + 90;
 							posDistance = 1.5 * j - ( (1.5 * tagLightCount) / 2 );
 							if ( posDirection[j] > 360 ) {
@@ -537,7 +544,7 @@ function parseOSM(data)
 					}
 
 					let markerLocation = new L.LatLng(EleLatNew,EleLonNew);
-					
+
 					let Icon = getMarkerIcon(L,tagLightSource, tagLightMethod, tagLightColour, tagLightFlash, lightDirectionArray[j], tagLightShape, tagLightHeight, tagNavigationaid, refArray[j]);
 					let marker = new L.Marker(markerLocation,{icon : Icon});
 
@@ -545,7 +552,7 @@ function parseOSM(data)
 					{
 						marker.bindPopup(EleText);
 					}
-						
+
 					if(tagLightSource == "aviation" || tagLightSource == "warning") {
 						AviationLayer.addLayer(marker);
 					} else {
@@ -560,6 +567,13 @@ function parseOSM(data)
 
 			}
 
+		} else if (tagAmenity == "bench") {
+			let markerLocation = new L.LatLng(EleLat, EleLon);
+			let Icon = getMarkerIcon(L, "bench");
+			let marker = new L.Marker(markerLocation, {
+				icon: Icon
+			});
+			BenchesLayer.addLayer(marker);
 		} else if (tagLit == "no" || tagLit == "disused") {
 			// Draw ways, which have no popup
 			if(tagArea) {
@@ -601,7 +615,7 @@ function parseOSM(data)
 					dashArray: strokeDashArray
 				})
 				LitStreetsLayer.addLayer(line)
-				
+
 				if (tagLit == "24/7") { // dotted outline for 24/7
 					let line = L.polyline(EleCoordArray.map(p => new L.LatLng(p[0], p[1])), {
 						color: strokeColor,
@@ -628,11 +642,11 @@ function parseOSMlowZoom(data)
 	//console.log(data);
 	let MarkerArray = new Array();
 	let CoordObj = new Object();
-	
+
 	let iconClass = "light_13";
 	let iconSize = 8;
 	let LightsData = []
-	
+
 	$(data).find('node').each(function(){
 		let EleID = $(this).attr("id");
 		let EleCoordArray = new Array();
@@ -656,9 +670,9 @@ function parseOSMlowZoom(data)
 				iconAnchor:   [0, 0],
 				});
 			let marker = new L.Marker(markerLocation,{icon : markerIcon});
-			
+
 		}
-		
+
 		LightsData.push({"lat" : EleLat, "lng" : EleLon, "count" : 1});
 	});
 
@@ -681,10 +695,10 @@ function addLatLngDistanceM(EleLat,EleLon,angleDeg,distance) {
 	const degLatPerM = 1 / ( 111132.92 - 559.82 * Math.cos( 2 * latRad ) + 1.175 * Math.cos( 4 * latRad ) - 0.0023 * Math.cos( 6 * latRad ) );
 	const degLonPerM = 1 / ( 111412.84 * Math.cos ( latRad ) - 93.5 * Math.cos ( 3 * latRad ) + 0.118 * Math.cos ( 5 * latRad ) );
 	const angleRad = angleDeg * Math.PI / 180;
-	
+
 	let latDistM = 0, lonDistM = 0; // Default fallback values
 
-	
+
 	latDistM = Math.cos ( angleRad ) * distance;
 	lonDistM = Math.sin ( angleRad ) * distance;
 
@@ -766,7 +780,9 @@ function getLightMount(value) {
 
 function getMarkerIcon(L,lightSource,lightMethod,lightColour,lightFlash,lightDirection,lightShape,lightHeight,navigationaid,ref) {
 	let symbolURL = "electric";
-	if (lightSource == "xmas") {
+	if (lightSource == "bench") {
+		symbolURL = "bench";
+	} else if (lightSource == "xmas") {
 		symbolURL = "xmastree";
 	} else if (navigationaid == "beacon") {
 		symbolURL = "beacon";
@@ -787,44 +803,45 @@ function getMarkerIcon(L,lightSource,lightMethod,lightColour,lightFlash,lightDir
 	}
 
 	let colourURL = "";
-	
-	if (lightColour) {
-		// convert Kelvin light temperatures to colour values
-		if (lightColour.substr(-1) == "K") {
-			let KelvinLength = lightColour.indexOf("K");
-			let lightColourK = Number(lightColour.substr(0,KelvinLength));
-			if (!lightColourK.isNaN) {
-				if (lightColourK < 2000) {
-					colourURL = "_gas";
-				} else if (lightColourK < 2600) {
-					colourURL = "_orange";
-				} else if (lightColourK < 3000) {
-					colourURL = "_fluorescent";
-				} else if (lightColourK < 4000) {
-					colourURL = "_led";
-				} else if (lightColourK > 5600) {
-					colourURL = "_mercury";
-				} else {
-					colourURL = "_white";
+    if (lightSource !== "bench") {
+		if (lightColour) {
+			// convert Kelvin light temperatures to colour values
+			if (lightColour.substr(-1) == "K") {
+				let KelvinLength = lightColour.indexOf("K");
+				let lightColourK = Number(lightColour.substr(0,KelvinLength));
+				if (!lightColourK.isNaN) {
+					if (lightColourK < 2000) {
+						colourURL = "_gas";
+					} else if (lightColourK < 2600) {
+						colourURL = "_orange";
+					} else if (lightColourK < 3000) {
+						colourURL = "_fluorescent";
+					} else if (lightColourK < 4000) {
+						colourURL = "_led";
+					} else if (lightColourK > 5600) {
+						colourURL = "_mercury";
+					} else {
+						colourURL = "_white";
+					}
 				}
 			}
-		}   
-		// add verbal colours:
-		if (lightColour == "white") {
-			colourURL = "_white";
-		} else if (lightColour == "orange") {
-			colourURL = "_orange";
-		} else if (lightColour == "blue") {
-			colourURL = "_blue";
-		} else if (lightColour == "red") {
-			colourURL = "_red";
-		} else if (lightColour == "green") {
-			colourURL = "_green";
-		} else if (lightColour == "yellow") {
-			colourURL = "_yellow";
+			// add verbal colours:
+			if (lightColour == "white") {
+				colourURL = "_white";
+			} else if (lightColour == "orange") {
+				colourURL = "_orange";
+			} else if (lightColour == "blue") {
+				colourURL = "_blue";
+			} else if (lightColour == "red") {
+				colourURL = "_red";
+			} else if (lightColour == "green") {
+				colourURL = "_green";
+			} else if (lightColour == "yellow") {
+				colourURL = "_yellow";
+			}
 		}
-	}
-	
+    }
+
 	// default/adapted light colours for different light methods:
 	if (lightMethod == "LED" || lightMethod == "led") {
 		if (!colourURL || colourURL == "_white") {
@@ -893,13 +910,13 @@ function getMarkerIcon(L,lightSource,lightMethod,lightColour,lightFlash,lightDir
 	} else if(navigationaid == "beacon") {
 		colourURL = "_white";
 	}
-	
+
 	let directionCSS, directionDeg;
 	let rotate = 0;
 	let iconOffset = 0, iconSize = 0, iconClass = "";
 	let zoomClass = 0;
 	let refClass = "";
-	
+
 	if (map.getZoom() == 19) {
 		//if (lightHeight > 10)
 		zoomClass = 19;
@@ -919,7 +936,7 @@ function getMarkerIcon(L,lightSource,lightMethod,lightColour,lightFlash,lightDir
 		} else if (lightHeight <= 2) {
 			zoomClass = 17;
 		}
-	} else if (map.getZoom() == 18) {  
+	} else if (map.getZoom() == 18) {
 		zoomClass = 18;
 		refClass = "lamp_ref_18_text";
 		if (navigationaid == "beacon") {
