@@ -126,6 +126,15 @@
 			};
 
 			var overlayMaps = {
+				"street_lights_low_zoom": StreetLightsLowZoomLayer,
+				"street_lights": StreetLightsLayer,
+				"aviation_lights": AviationLayer,
+				"lit_streets": LitStreetsLayer,
+				"unlit_streets": UnLitStreetsLayer,
+				"benches": BenchesLayer
+			};
+
+			var overlayMaps_names = {
 				"<span id='layer_street_lights_lowzoom'>Street Lights Low Zoom</span>": StreetLightsLowZoomLayer,
 				"<span id='layer_street_lights'>Street Lights</span>": StreetLightsLayer,
 				"<span id='layer_aviation_lights'>Aviation Lights</span>": AviationLayer,
@@ -155,7 +164,7 @@
 			map.addControl(LanguageSelector);
 			
 			// add maps
-			L.control.layers(baseMaps, overlayMaps).addTo(map);
+			L.control.layers(baseMaps, overlayMaps_names).addTo(map);
 
 			// add opacity control
 			let g_opacityHasData = OPACITY_HAS_DATA; // opacity level when showing street lights
@@ -213,7 +222,7 @@
 			BenchesLayer.on('remove',function(){MoveCall(3);});
 			
 			//Permalink
-			var hash = new L.Hash(map);
+			var hash = new L.Hash(map, baseMaps, overlayMaps);
 			map.on('moveend',function(){MoveCall(0);});
 
 			function openinJOSM(type, ID){

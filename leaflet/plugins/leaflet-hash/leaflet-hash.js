@@ -5,11 +5,11 @@
 			(doc_mode === undefined || doc_mode > 7);
 	})();
 
-	L.Hash = function(map) {
+	L.Hash = function(map, baseLayers, overlays) {
 		this.onHashChange = L.Util.bind(this.onHashChange, this);
 
 		if (map) {
-			this.init(map);
+			this.init(map, baseLayers, overlays);
 		}
 	};
 
@@ -17,18 +17,23 @@
 		if(hash.indexOf('#') === 0) {
 			hash = hash.substr(1);
 		}
-		var args = hash.split("/");
-		if (args.length == 3) {
+		var args = hash.split('/');
+		if (args.length >= 3) {
 			var zoom = parseInt(args[0], 10),
 			lat = parseFloat(args[1]),
-			lon = parseFloat(args[2]);
+			lon = parseFloat(args[2]),
+			layers = args[3];
 			if (isNaN(zoom) || isNaN(lat) || isNaN(lon)) {
 				return false;
 			} else {
-				return {
+				var result = {
 					center: new L.LatLng(lat, lon),
 					zoom: zoom
 				};
+				if (layers) {
+					result.layers = layers.split(',');
+				}
+				return result;
 			}
 		} else {
 			return false;
@@ -40,21 +45,38 @@
 		    zoom = map.getZoom(),
 		    precision = Math.max(0, Math.ceil(Math.log(zoom) / Math.LN2));
 
-		return "#" + [zoom,
+		var layers = [];
+		// Find active layers
+		for (var key in this.overlays) {
+			if (map.hasLayer(this.overlays[key])) {
+				layers.push(key);
+			}
+		}
+
+		var params = [
+			zoom,
 			center.lat.toFixed(precision),
 			center.lng.toFixed(precision)
-		].join("/");
+		];
+		if (layers.length > 0) {
+			params.push(layers.join(','));
+		}
+		return "#" + params.join("/");
 	},
 
 	L.Hash.prototype = {
 		map: null,
 		lastHash: null,
+		baseLayers: null,
+		overlays: null,
 
 		parseHash: L.Hash.parseHash,
 		formatHash: L.Hash.formatHash,
 
-		init: function(map) {
+		init: function(map, baseLayers, overlays) {
 			this.map = map;
+			this.baseLayers = baseLayers || {};
+			this.overlays = overlays || {};
 
 			// reset the hash
 			this.lastHash = null;
@@ -104,6 +126,25 @@
 
 				this.map.setView(parsed.center, parsed.zoom);
 
+				if (parsed.layers) {
+					var i, len = parsed.layers.length;
+					for (i = 0; i < len; i++) {
+						var layerName = parsed.layers[i];
+						if (this.overlays[layerName] && !this.map.hasLayer(this.overlays[layerName])) {
+							this.map.addLayer(this.overlays[layerName]);
+						}
+					}
+					for (var key in this.overlays) {
+						if (parsed.layers.indexOf(key) === -1 && this.map.hasLayer(this.overlays[key])) {
+							this.map.removeLayer(this.overlays[key]);
+						}
+					}
+				} else { // No layers in hash, so show default
+					this.map.addLayer(this.overlays['street_lights']);
+					this.map.addLayer(this.overlays['benches']);
+				}
+
+
 				this.movingMap = false;
 			} else {
 				this.onMapMove(this.map);
@@ -129,6 +170,7 @@
 		hashChangeInterval: null,
 		startListening: function() {
 			this.map.on("moveend", this.onMapMove, this);
+			this.map.on('overlayadd overlayremove', this.onMapMove, this);
 
 			if (HAS_HASHCHANGE) {
 				L.DomEvent.addListener(window, "hashchange", this.onHashChange);
@@ -141,6 +183,7 @@
 
 		stopListening: function() {
 			this.map.off("moveend", this.onMapMove, this);
+			this.map.off('overlayadd overlayremove', this.onMapMove, this);
 
 			if (HAS_HASHCHANGE) {
 				L.DomEvent.removeListener(window, "hashchange", this.onHashChange);
@@ -150,8 +193,8 @@
 			this.isListening = false;
 		}
 	};
-	L.hash = function(map) {
-		return new L.Hash(map);
+	L.hash = function(map, baseLayers, overlays) {
+		return new L.Hash(map, baseLayers, overlays);
 	};
 	L.Map.prototype.addHash = function() {
 		this._hash = L.hash(this);
