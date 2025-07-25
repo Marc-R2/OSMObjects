@@ -55,10 +55,10 @@ function loadXML(lat1, lon1, lat2, lon2, action) { //action: 0: map moved, 1: hi
 	}
 	// load data if map moved or layer added
 	if (hasHighZoomLayer && (action == 0 || action == 1)) {
-		loadData('[bbox:' + lat2 + ',' + lon1 + ',' + lat1 + ',' + lon2 +  '];');
+		loadDataRectangles(lat1, lon1, lat2, lon2);
 	}
 	if (hasLowZoomLayer && (action == 0 || action == 2 || action == 4)) {
-		loadDataLowZoom('[bbox:' + lat2 + ',' + lon1 + ',' + lat1 + ',' + lon2 + '];');
+		loadDataLowZoomRectangles(lat1, lon1, lat2, lon2);
 	}
 
 	//remove data:
@@ -128,6 +128,12 @@ function loadXML(lat1, lon1, lat2, lon2, action) { //action: 0: map moved, 1: hi
 			$("#opacity_slider").slider("option", "value", 100);
 		}
 	}
+	
+	// Refresh rectangle overlays after any data loading operation
+	if (typeof refreshRectangleOverlays === 'function') {
+		// Small delay to allow loading states to be updated
+		setTimeout(refreshRectangleOverlays, 100);
+	}
 
 }
 
@@ -180,8 +186,7 @@ function loadData(bbox) {
 	XMLRequestText += '); out qt; '
 	//console.log ( XMLRequestText );
 
-	//URL Codieren
-	XMLRequestText = encodeURIComponent(XMLRequestText);
+	//URL encoding handled by multiple_endpoints.js
 
 	if (location.protocol == 'https:') {
 		RequestProtocol = "https://";
@@ -1134,4 +1139,288 @@ function getMarkerIcon(L,lightSource,lightMethod,lightColour,lightFlash,lightDir
 		popupAnchor:  [0, -5]
 	});
 	return Icon;
+}
+
+/**
+ * Rectangle-based data loading for high zoom levels
+ */
+function loadDataRectangles(lat1, lon1, lat2, lon2) {
+	// Convert coordinates to bounds object
+	const mapBounds = {
+		north: lat1,
+		south: lat2, 
+		east: lon2,
+		west: lon1
+	};
+	
+	// Get rectangles in current view
+	const rectanglesInView = getRectanglesInView({
+		getNorth: () => mapBounds.north,
+		getSouth: () => mapBounds.south,
+		getEast: () => mapBounds.east,
+		getWest: () => mapBounds.west
+	});
+	
+	console.log(`Found ${rectanglesInView.length} rectangles in view for high zoom data`);
+	
+	// Find rectangles that need loading
+	const rectanglesToLoad = rectanglesInView.filter(rectId => {
+		if (isRectangleLoaded(rectId)) {
+			return false; // Already loaded
+		}
+		if (isRectangleLoading(rectId)) {
+			return false; // Currently loading
+		}
+		return shouldRetryRectangle(rectId); // Should retry failed rectangles
+	});
+	
+	console.log(`Need to load ${rectanglesToLoad.length} rectangles for high zoom data`);
+	
+	if (rectanglesToLoad.length === 0) {
+		// All data already loaded or loading, merge existing data
+		mergeAndRenderRectangleData(rectanglesInView, false);
+		return;
+	}
+	
+	// Load each rectangle individually
+	rectanglesToLoad.forEach(rectId => {
+		loadSingleRectangleData(rectId, false);
+	});
+	
+	// Always merge and render available data
+	mergeAndRenderRectangleData(rectanglesInView, false);
+}
+
+/**
+ * Rectangle-based data loading for low zoom levels  
+ */
+function loadDataLowZoomRectangles(lat1, lon1, lat2, lon2) {
+	// Convert coordinates to bounds object
+	const mapBounds = {
+		north: lat1,
+		south: lat2,
+		east: lon2,
+		west: lon1
+	};
+	
+	// Get rectangles in current view
+	const rectanglesInView = getRectanglesInView({
+		getNorth: () => mapBounds.north,
+		getSouth: () => mapBounds.south,
+		getEast: () => mapBounds.east,
+		getWest: () => mapBounds.west
+	});
+	
+	console.log(`Found ${rectanglesInView.length} rectangles in view for low zoom data`);
+	
+	// Find rectangles that need loading
+	const rectanglesToLoad = rectanglesInView.filter(rectId => {
+		if (isRectangleLoaded(rectId + '_lowzoom')) {
+			return false; // Already loaded (use separate ID for low zoom)
+		}
+		if (isRectangleLoading(rectId + '_lowzoom')) {
+			return false; // Currently loading
+		}
+		return shouldRetryRectangle(rectId + '_lowzoom'); // Should retry failed rectangles
+	});
+	
+	console.log(`Need to load ${rectanglesToLoad.length} rectangles for low zoom data`);
+	
+	if (rectanglesToLoad.length === 0) {
+		// All data already loaded or loading, merge existing data
+		mergeAndRenderRectangleData(rectanglesInView.map(id => id + '_lowzoom'), true);
+		return;
+	}
+	
+	// Load each rectangle individually
+	rectanglesToLoad.forEach(rectId => {
+		loadSingleRectangleData(rectId + '_lowzoom', true);
+	});
+	
+	// Always merge and render available data
+	mergeAndRenderRectangleData(rectanglesInView.map(id => id + '_lowzoom'), true);
+}
+
+/**
+ * Load data for a single rectangle
+ */
+function loadSingleRectangleData(rectangleId, isLowZoom = false) {
+	// Extract base rectangle ID (remove _lowzoom suffix if present)
+	const baseRectId = rectangleId.replace('_lowzoom', '');
+	const bounds = getRectangleBounds(baseRectId);
+	
+	markRectangleLoading(rectangleId);
+	
+	$( "#loading_text" ).text("")
+	$( "#loading" ).attr("class", "");
+	$( "#loading_icon" ).attr("class", "loading_spinner")
+	$( "#loading_cont" ).fadeIn(100)
+	loadingcounter++;
+	
+	let XMLRequestText;
+	let RequestURL;
+	
+	if (isLowZoom) {
+		// Low zoom query - just street lamps and light sources
+		XMLRequestText = `[bbox:${bounds.south},${bounds.west},${bounds.north},${bounds.east}];` +
+			'( node["highway"="street_lamp"]; node["light_source"];); out skel;'
+	} else {
+		// High zoom query - full detailed query
+		XMLRequestText = `[bbox:${bounds.south},${bounds.west},${bounds.north},${bounds.east}];` +
+			'( node["highway"="street_lamp"]; node["light_source"]; node["tower:type"="lighting"]; node["aeroway"="navigationaid"];'
+		
+		if (map.hasLayer(BenchesLayer)) {
+			XMLRequestText += 'node["amenity"="bench"];'
+		}
+		
+		const today = new Date();
+		if (today.getMonth() == 11) { // show christmas trees only in December
+			XMLRequestText += 'node["xmas:feature"="tree"];'
+		}
+		
+		if (map.hasLayer(LitStreetsLayer) || map.hasLayer(UnLitStreetsLayer)) {
+			XMLRequestText += '(way["highway"][!area]["lit"]; >;); ' +
+				'(way["highway"][area]["lit"]; >;); ';
+		}
+		XMLRequestText += '); out qt; '
+	}
+	
+	//URL encoding handled by multiple_endpoints.js
+	
+	if (location.protocol == 'https:') {
+		RequestProtocol = "https://";
+	} else {
+		RequestProtocol = "http://";
+	}
+	
+	console.log(`Loading rectangle ${rectangleId} with bounds:`, bounds);
+	
+	// Use multiple endpoint system for enhanced reliability
+	makeOverpassRequest(XMLRequestText, isLowZoom, rectangleId)
+		.then(function(result) {
+			console.log(`Successfully loaded rectangle ${rectangleId} from ${result.endpoint} (attempt ${result.attempt})`);
+			
+			if (loadingcounter==1) {
+				$( "#loading_text" ).html("")
+				$( "#loading" ).attr("class", "success");
+				$( "#loading_icon" ).attr("class", "loading_success")
+			}
+			loadingcounter--;
+			
+			// Store the data in rectangle cache
+			markRectangleLoaded(rectangleId, result.data);
+			
+			// Re-render the current view with updated data
+			const currentBounds = map.getBounds();
+			const currentRectangles = getRectanglesInView(currentBounds);
+			if (isLowZoom) {
+				mergeAndRenderRectangleData(currentRectangles.map(id => id + '_lowzoom'), true);
+			} else {
+				mergeAndRenderRectangleData(currentRectangles, false);
+			}
+		})
+		.catch(function(error) {
+			console.log(`Failed to load rectangle ${rectangleId} after trying multiple endpoints:`, error);
+			
+			markRectangleFailed(rectangleId);
+			
+			let textStatus_value;
+			if( i18next.isInitialized) {
+				if (error.textStatus == "timeout" || error.textStatus == "error" || error.textStatus == "abort" || error.textStatus == "parseerror") {
+					textStatus_value = i18next.t("ajaxerror_" + error.textStatus);
+				} else {
+					textStatus_value = i18next.t("ajaxerror_unknown");
+				}
+			} else { // fallback in case i18next is not initalized yet.
+				textStatus_value = "Error while loading data";
+			}
+			
+			// Add endpoint information to error message
+			if (error.status === 429) {
+				textStatus_value += " (Too Many Requests - tried multiple endpoints)";
+			} else if (error.endpoint) {
+				textStatus_value += ` (Last tried: ${error.endpoint})`;
+			}
+			
+			$( "#loading" ).attr("class", "error");
+			$( "#loading_icon" ).attr("class", "loading_error")
+			$( "#loading_text" ).html("&nbsp;" + textStatus_value)
+			loadingcounter--;
+		});
+}
+
+/**
+ * Merge data from multiple rectangles and render it
+ */
+function mergeAndRenderRectangleData(rectangleIds, isLowZoom = false) {
+	const dataArrays = getRectangleData(rectangleIds);
+	
+	if (dataArrays.length === 0) {
+		console.log(`No data available for ${rectangleIds.length} rectangles`);
+		return;
+	}
+	
+	console.log(`Merging data from ${dataArrays.length} loaded rectangles out of ${rectangleIds.length} total`);
+	
+	if (isLowZoom) {
+		// For low zoom, we need to merge all data into a single dataset
+		// and pass it to the low zoom parser
+		const mergedData = mergeXMLData(dataArrays);
+		parseOSMlowZoom(mergedData);
+	} else {
+		// For high zoom, we need to merge all data into a single dataset
+		// and pass it to the regular parser
+		const mergedData = mergeXMLData(dataArrays);
+		parseOSM(mergedData);
+	}
+}
+
+/**
+ * Merge multiple XML datasets into a single XML document
+ */
+function mergeXMLData(dataArrays) {
+	if (dataArrays.length === 0) {
+		return null;
+	}
+	
+	if (dataArrays.length === 1) {
+		return dataArrays[0];
+	}
+	
+	// Create a new XML document with osm root
+	const xmlDoc = document.implementation.createDocument(null, "osm", null);
+	const osmRoot = xmlDoc.documentElement;
+	osmRoot.setAttribute("version", "0.6");
+	osmRoot.setAttribute("generator", "Rectangle Manager");
+	
+	const addedElements = new Set(); // Track added elements to avoid duplicates
+	
+	// Merge all data
+	dataArrays.forEach((data, index) => {
+		if (!data) return;
+		
+		// Parse the XML data if it's a string
+		let doc = data;
+		if (typeof data === 'string') {
+			const parser = new DOMParser();
+			doc = parser.parseFromString(data, 'text/xml');
+		}
+		
+		// Add all nodes and ways from this dataset
+		const elements = doc.querySelectorAll('node, way');
+		elements.forEach(element => {
+			const id = element.getAttribute('id');
+			const elementKey = element.tagName + '_' + id;
+			
+			// Only add if we haven't seen this element before
+			if (!addedElements.has(elementKey)) {
+				const clonedElement = xmlDoc.importNode(element, true);
+				osmRoot.appendChild(clonedElement);
+				addedElements.add(elementKey);
+			}
+		});
+	});
+	
+	console.log(`Merged ${addedElements.size} unique elements from ${dataArrays.length} rectangles`);
+	return xmlDoc;
 }

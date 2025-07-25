@@ -5,8 +5,8 @@ const SHOW_GEOLOCATE_BUTTON = true;
 const LIGHT_COUNT_MAX = 10;
 
 // Set minimum zoom levels for rendering street lights and the lowzoom street lights layer			
-const MIN_ZOOM = 15;
-const MIN_ZOOM_LOW_ZOOM = 11;
+const MIN_ZOOM = 13;  // Reduced from 15 to start loading earlier
+const MIN_ZOOM_LOW_ZOOM = 9;  // Reduced from 11 to start loading earlier
 
 // set default opacity levels;
 const OPACITY_NO_DATA = 1.0;
