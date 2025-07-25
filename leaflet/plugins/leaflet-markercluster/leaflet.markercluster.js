@@ -20,6 +20,7 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
         this._featureGroup = L.featureGroup();
         this._clusters = [];
         this._markersMap = new Map();
+        this._updating = false; // Prevent circular updates
         
         if (!this.options.iconCreateFunction) {
             this.options.iconCreateFunction = this._defaultIconCreateFunction;
@@ -49,6 +50,8 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
     },
 
     addLayer: function (layer) {
+        if (this._updating) return this; // Prevent circular calls
+        
         if (layer instanceof L.LayerGroup) {
             return this.addLayers(layer);
         }
@@ -64,6 +67,8 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
     },
 
     removeLayer: function (layer) {
+        if (this._updating) return this; // Prevent circular calls
+        
         const id = L.Util.stamp(layer);
         this._markersMap.delete(id);
         
@@ -75,11 +80,19 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
     },
 
     addLayers: function (layers) {
+        if (this._updating) return this; // Prevent circular calls
+        
         const markers = [];
         
-        layers.eachLayer ? layers.eachLayer(function(layer) {
-            markers.push(layer);
-        }) : markers.push(layers);
+        if (layers.eachLayer) {
+            layers.eachLayer(function(layer) {
+                markers.push(layer);
+            });
+        } else if (Array.isArray(layers)) {
+            markers.push(...layers);
+        } else {
+            markers.push(layers);
+        }
         
         markers.forEach(marker => {
             const id = L.Util.stamp(marker);
@@ -105,49 +118,54 @@ L.MarkerClusterGroup = L.FeatureGroup.extend({
     },
 
     _update: function () {
-        if (!this._map) return;
+        if (!this._map || this._updating) return;
         
-        const zoom = this._map.getZoom();
-        const bounds = this._map.getBounds();
+        this._updating = true; // Set flag to prevent circular calls
         
-        // Clear existing clusters
-        this._featureGroup.clearLayers();
-        this._clusters = [];
-        
-        // Don't cluster at high zoom levels
-        if (this.options.disableClusteringAtZoom && zoom >= this.options.disableClusteringAtZoom) {
-            this._markersMap.forEach(marker => {
-                if (bounds.contains(marker.getLatLng())) {
-                    this._featureGroup.addLayer(marker);
-                }
-            });
-            return;
-        }
-        
-        // Get visible markers
-        const visibleMarkers = [];
-        this._markersMap.forEach(marker => {
-            if (bounds.contains(marker.getLatLng())) {
-                visibleMarkers.push(marker);
-            }
-        });
-        
-        // Create clusters
-        const clusters = this._createClusters(visibleMarkers);
-        
-        // Add clusters to map
-        clusters.forEach(cluster => {
-            if (cluster.markers.length === 1) {
-                this._featureGroup.addLayer(cluster.markers[0]);
+        try {
+            const zoom = this._map.getZoom();
+            const bounds = this._map.getBounds();
+            
+            // Clear existing clusters
+            this._featureGroup.clearLayers();
+            this._clusters = [];
+            
+            // Don't cluster at high zoom levels
+            if (this.options.disableClusteringAtZoom && zoom >= this.options.disableClusteringAtZoom) {
+                this._markersMap.forEach(marker => {
+                    if (bounds.contains(marker.getLatLng())) {
+                        this._featureGroup.addLayer(marker);
+                    }
+                });
             } else {
-                const clusterMarker = this._createClusterMarker(cluster);
-                this._featureGroup.addLayer(clusterMarker);
+                // Get visible markers
+                const visibleMarkers = [];
+                this._markersMap.forEach(marker => {
+                    if (bounds.contains(marker.getLatLng())) {
+                        visibleMarkers.push(marker);
+                    }
+                });
+                
+                // Create clusters
+                const clusters = this._createClusters(visibleMarkers);
+                
+                // Add clusters to map
+                clusters.forEach(cluster => {
+                    if (cluster.markers.length === 1) {
+                        this._featureGroup.addLayer(cluster.markers[0]);
+                    } else {
+                        const clusterMarker = this._createClusterMarker(cluster);
+                        this._featureGroup.addLayer(clusterMarker);
+                    }
+                });
             }
-        });
-        
-        // Add feature group to this layer if not already added
-        if (!this.hasLayer(this._featureGroup)) {
-            this.addLayer(this._featureGroup);
+            
+            // Add feature group to this layer if not already added
+            if (!this.hasLayer(this._featureGroup)) {
+                this.addLayer(this._featureGroup);
+            }
+        } finally {
+            this._updating = false; // Always reset the flag
         }
     },
 

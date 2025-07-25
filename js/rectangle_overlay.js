@@ -19,12 +19,8 @@ const RECTANGLE_OVERLAY_CONFIG = {
     LOADING_ANIMATION_SPEED: 1000, // ms for pulse animation
 };
 
-// Global overlay layers
-let rectangleOverlayLayers = {
-    loading: new L.LayerGroup(),
-    error: new L.LayerGroup(), 
-    success: new L.LayerGroup()
-};
+// Global overlay layers - will be initialized when needed
+let rectangleOverlayLayers = null;
 
 // Track individual rectangle overlays
 let rectangleOverlays = new Map(); // rectangleId -> {loading: polygon, error: polygon, success: polygon}
@@ -40,6 +36,15 @@ let overlayVisibility = {
  * Initialize rectangle overlay system
  */
 function initializeRectangleOverlays() {
+    // Initialize overlay layers now that Leaflet is available
+    if (!rectangleOverlayLayers) {
+        rectangleOverlayLayers = {
+            loading: new L.LayerGroup(),
+            error: new L.LayerGroup(), 
+            success: new L.LayerGroup()
+        };
+    }
+    
     // Add overlay layers to map (but start hidden except errors)
     map.addLayer(rectangleOverlayLayers.error); // Show errors by default
     
@@ -113,6 +118,8 @@ function createOverlayControls() {
  * Toggle visibility of overlay type
  */
 function toggleOverlayVisibility(overlayType, visible) {
+    if (!rectangleOverlayLayers) return; // Not initialized yet
+    
     overlayVisibility[overlayType] = visible;
     
     if (visible) {
@@ -225,6 +232,8 @@ function animateLoadingRectangle(rectangle) {
  * Update rectangle overlay status
  */
 function updateRectangleOverlay(rectangleId, newStatus, removeOldStatus = null) {
+    if (!rectangleOverlayLayers) return; // Not initialized yet
+    
     // Remove old status overlay if specified
     if (removeOldStatus && rectangleOverlays.has(rectangleId)) {
         const overlays = rectangleOverlays.get(rectangleId);
@@ -301,8 +310,12 @@ function retryFailedRectangle(rectangleId) {
  * Clear all rectangle overlays
  */
 function clearAllRectangleOverlays() {
+    if (!rectangleOverlayLayers) return; // Not initialized yet
+    
     ['loading', 'error', 'success'].forEach(status => {
-        rectangleOverlayLayers[status].clearLayers();
+        if (rectangleOverlayLayers[status]) {
+            rectangleOverlayLayers[status].clearLayers();
+        }
     });
     
     // Clear all animation intervals
@@ -319,6 +332,8 @@ function clearAllRectangleOverlays() {
  * Update overlays based on current rectangle cache state
  */
 function refreshRectangleOverlays() {
+    if (!rectangleOverlayLayers) return; // Not initialized yet
+    
     // Clear existing overlays
     clearAllRectangleOverlays();
     

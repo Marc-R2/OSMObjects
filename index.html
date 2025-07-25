@@ -101,12 +101,21 @@
 				maxZoom : 19,
 				minZoom : MIN_ZOOM
 			});
-			var BenchesLayer = new L.MarkerClusterGroup({
-				maxClusterRadius: 50,
-				disableClusteringAtZoom: 16,
-				maxZoom : 19,
-				minZoom : MIN_ZOOM
-			});
+			var BenchesLayer;
+			// Use clustering if available, otherwise fallback to regular LayerGroup
+			if (typeof L.MarkerClusterGroup !== 'undefined') {
+				BenchesLayer = new L.MarkerClusterGroup({
+					maxClusterRadius: 50,
+					disableClusteringAtZoom: 16,
+					maxZoom : 19,
+					minZoom : MIN_ZOOM
+				});
+			} else {
+				BenchesLayer = new L.LayerGroup([],{
+					maxZoom : 19,
+					minZoom : MIN_ZOOM
+				});
+			}
 
 			var OverpassAttrib = 'Data via <a href="http://www.overpass-api.de/">Overpass API</a>';
 			
