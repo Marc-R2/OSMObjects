@@ -139,6 +139,11 @@ function shouldRetryRectangle(rectangleId) {
  */
 function markRectangleLoading(rectangleId) {
     loadingRectangles.add(rectangleId);
+    
+    // Update overlay if overlay system is available
+    if (typeof updateRectangleOverlay === 'function') {
+        updateRectangleOverlay(rectangleId, 'loading');
+    }
 }
 
 /**
@@ -151,11 +156,16 @@ function markRectangleLoaded(rectangleId, data) {
     failedRectangles.delete(rectangleId);
     
     loadedRectangles.set(rectangleId, {
-        bounds: getRectangleBounds(rectangleId),
+        bounds: getRectangleBounds(rectangleId.replace('_lowzoom', '')),
         data: data,
         timestamp: Date.now(),
         status: 'loaded'
     });
+    
+    // Update overlay if overlay system is available
+    if (typeof updateRectangleOverlay === 'function') {
+        updateRectangleOverlay(rectangleId, 'success', 'loading');
+    }
 }
 
 /**
@@ -170,6 +180,11 @@ function markRectangleFailed(rectangleId) {
         attempts: current.attempts + 1,
         lastFailTime: Date.now()
     });
+    
+    // Update overlay if overlay system is available
+    if (typeof updateRectangleOverlay === 'function') {
+        updateRectangleOverlay(rectangleId, 'error', 'loading');
+    }
 }
 
 /**
@@ -199,6 +214,11 @@ function clearRectangleCache() {
     loadedRectangles.clear();
     loadingRectangles.clear();
     failedRectangles.clear();
+    
+    // Clear overlays if overlay system is available
+    if (typeof clearAllRectangleOverlays === 'function') {
+        clearAllRectangleOverlays();
+    }
 }
 
 /**

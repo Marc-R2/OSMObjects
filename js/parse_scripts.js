@@ -128,6 +128,12 @@ function loadXML(lat1, lon1, lat2, lon2, action) { //action: 0: map moved, 1: hi
 			$("#opacity_slider").slider("option", "value", 100);
 		}
 	}
+	
+	// Refresh rectangle overlays after any data loading operation
+	if (typeof refreshRectangleOverlays === 'function') {
+		// Small delay to allow loading states to be updated
+		setTimeout(refreshRectangleOverlays, 100);
+	}
 
 }
 
@@ -1289,17 +1295,12 @@ function loadSingleRectangleData(rectangleId, isLowZoom = false) {
 		RequestProtocol = "http://";
 	}
 	
-	RequestURL = RequestProtocol + "overpass-api.de/api/interpreter?data=" + XMLRequestText;
-	
 	console.log(`Loading rectangle ${rectangleId} with bounds:`, bounds);
 	
-	//AJAX REQUEST
-	$.ajax({
-		url: RequestURL,
-		type: 'GET',
-		crossDomain: true,
-		success: function(data) {
-			console.log(`Successfully loaded rectangle ${rectangleId}`);
+	// Use multiple endpoint system for enhanced reliability
+	makeOverpassRequest(XMLRequestText, isLowZoom, rectangleId)
+		.then(function(result) {
+			console.log(`Successfully loaded rectangle ${rectangleId} from ${result.endpoint} (attempt ${result.attempt})`);
 			
 			if (loadingcounter==1) {
 				$( "#loading_text" ).html("")
@@ -1309,7 +1310,7 @@ function loadSingleRectangleData(rectangleId, isLowZoom = false) {
 			loadingcounter--;
 			
 			// Store the data in rectangle cache
-			markRectangleLoaded(rectangleId, data);
+			markRectangleLoaded(rectangleId, result.data);
 			
 			// Re-render the current view with updated data
 			const currentBounds = map.getBounds();
@@ -1319,15 +1320,16 @@ function loadSingleRectangleData(rectangleId, isLowZoom = false) {
 			} else {
 				mergeAndRenderRectangleData(currentRectangles, false);
 			}
-		},
-		error: function(jqXHR, textStatus, errorThrown){
-			console.log(`Failed to load rectangle ${rectangleId}:`, textStatus);
+		})
+		.catch(function(error) {
+			console.log(`Failed to load rectangle ${rectangleId} after trying multiple endpoints:`, error);
 			
 			markRectangleFailed(rectangleId);
 			
+			let textStatus_value;
 			if( i18next.isInitialized) {
-				if (textStatus == "timeout" || textStatus == "error" || textStatus == "abort" || textStatus == "parseerror") {
-					textStatus_value = i18next.t("ajaxerror_" + textStatus);
+				if (error.textStatus == "timeout" || error.textStatus == "error" || error.textStatus == "abort" || error.textStatus == "parseerror") {
+					textStatus_value = i18next.t("ajaxerror_" + error.textStatus);
 				} else {
 					textStatus_value = i18next.t("ajaxerror_unknown");
 				}
@@ -1335,13 +1337,18 @@ function loadSingleRectangleData(rectangleId, isLowZoom = false) {
 				textStatus_value = "Error while loading data";
 			}
 			
+			// Add endpoint information to error message
+			if (error.status === 429) {
+				textStatus_value += " (Too Many Requests - tried multiple endpoints)";
+			} else if (error.endpoint) {
+				textStatus_value += ` (Last tried: ${error.endpoint})`;
+			}
+			
 			$( "#loading" ).attr("class", "error");
 			$( "#loading_icon" ).attr("class", "loading_error")
 			$( "#loading_text" ).html("&nbsp;" + textStatus_value)
 			loadingcounter--;
-		},
-		timeout: 10000 // timeout after 10s
-	});
+		});
 }
 
 /**
