@@ -13,6 +13,18 @@ const RECTANGLE_CONFIG = {
     RETRY_DELAY_MS: 5000
 };
 
+// Configuration for localStorage caching
+const CACHE_CONFIG = {
+    // Maximum cache size in MB (default 50MB)
+    MAX_CACHE_SIZE_MB: 50,
+    // Cache expiry time in milliseconds (default 7 days)
+    CACHE_EXPIRY_MS: 7 * 24 * 60 * 60 * 1000,
+    // localStorage key prefix
+    CACHE_KEY_PREFIX: 'osmobjects_cache_',
+    // Cache metadata key
+    CACHE_METADATA_KEY: 'osmobjects_cache_metadata'
+};
+
 // Global cache for loaded rectangles
 let loadedRectangles = new Map(); // rectangleId -> {bounds, data, timestamp, status}
 let loadingRectangles = new Set(); // currently loading rectangle IDs
@@ -97,13 +109,34 @@ function getRectanglesInView(mapBounds, gridSize = RECTANGLE_CONFIG.GRID_SIZE_DE
 }
 
 /**
- * Checks if a rectangle has been loaded and cached
+ * Checks if a rectangle has been loaded and cached (check both memory and localStorage)
  * @param {string} rectangleId - Rectangle ID
  * @returns {boolean} True if rectangle is loaded
  */
 function isRectangleLoaded(rectangleId) {
-    return loadedRectangles.has(rectangleId) && 
-           loadedRectangles.get(rectangleId).status === 'loaded';
+    // First check memory cache
+    if (loadedRectangles.has(rectangleId) && 
+        loadedRectangles.get(rectangleId).status === 'loaded') {
+        return true;
+    }
+    
+    // Then check localStorage cache
+    if (isInLocalStorageCache(rectangleId)) {
+        // Load from localStorage into memory for faster future access
+        const cachedData = loadFromLocalStorageCache(rectangleId);
+        if (cachedData) {
+            loadedRectangles.set(rectangleId, {
+                bounds: getRectangleBounds(rectangleId.replace('_lowzoom', '')),
+                data: cachedData,
+                timestamp: Date.now(),
+                status: 'loaded'
+            });
+            console.log(`Loaded rectangle ${rectangleId} from localStorage into memory cache`);
+            return true;
+        }
+    }
+    
+    return false;
 }
 
 /**
@@ -143,7 +176,7 @@ function markRectangleLoading(rectangleId) {
 }
 
 /**
- * Marks a rectangle as loaded with data
+ * Marks a rectangle as loaded with data (save to both memory and localStorage)
  * @param {string} rectangleId - Rectangle ID
  * @param {object} data - Loaded OSM data
  */
@@ -151,12 +184,16 @@ function markRectangleLoaded(rectangleId, data) {
     loadingRectangles.delete(rectangleId);
     failedRectangles.delete(rectangleId);
     
+    // Save to memory cache
     loadedRectangles.set(rectangleId, {
         bounds: getRectangleBounds(rectangleId.replace('_lowzoom', '')),
         data: data,
         timestamp: Date.now(),
         status: 'loaded'
     });
+    
+    // Save to localStorage cache
+    saveToLocalStorageCache(rectangleId, data);
     
     updateLoadingOverlays();
 }
@@ -198,23 +235,38 @@ function getRectangleData(rectangleIds) {
 }
 
 /**
- * Clears all cached rectangle data
+ * Clears all cached rectangle data (both memory and localStorage)
  */
 function clearRectangleCache() {
     loadedRectangles.clear();
     loadingRectangles.clear();
     failedRectangles.clear();
+    clearLocalStorageCache();
 }
 
 /**
- * Gets statistics about the rectangle cache
+ * Gets statistics about the rectangle cache (both memory and localStorage)
  * @returns {object} Cache statistics
  */
 function getRectangleCacheStats() {
-    return {
+    const memoryStats = {
         loaded: loadedRectangles.size,
         loading: loadingRectangles.size,
         failed: failedRectangles.size
+    };
+
+    const localStorageStats = getLocalStorageCacheStats();
+    
+    return {
+        memory: memoryStats,
+        localStorage: localStorageStats,
+        total: {
+            loaded: memoryStats.loaded,
+            loading: memoryStats.loading,
+            failed: memoryStats.failed,
+            cached: localStorageStats.count,
+            sizeMB: localStorageStats.sizeMB
+        }
     };
 }
 
@@ -336,4 +388,296 @@ function getLoadingOverlayLayers() {
         loadedOverlayLayer,
         errorOverlayLayer
     };
+}
+
+// ===============================
+// LOCAL STORAGE CACHING FUNCTIONS
+// ===============================
+
+/**
+ * Saves rectangle data to localStorage
+ * @param {string} rectangleId - Rectangle ID
+ * @param {object} data - Rectangle data to cache
+ */
+function saveToLocalStorageCache(rectangleId, data) {
+    try {
+        const cacheEntry = {
+            rectangleId: rectangleId,
+            data: data,
+            timestamp: Date.now(),
+            size: calculateDataSize(data)
+        };
+
+        const key = CACHE_CONFIG.CACHE_KEY_PREFIX + rectangleId;
+        localStorage.setItem(key, JSON.stringify(cacheEntry));
+        
+        // Update cache metadata
+        updateCacheMetadata(rectangleId, cacheEntry.size);
+        
+        // Check cache size and clean if necessary
+        manageCacheSize();
+        
+        console.log(`Cached rectangle ${rectangleId} to localStorage (${cacheEntry.size} bytes)`);
+    } catch (error) {
+        console.warn(`Failed to cache rectangle ${rectangleId} to localStorage:`, error);
+    }
+}
+
+/**
+ * Loads rectangle data from localStorage
+ * @param {string} rectangleId - Rectangle ID
+ * @returns {object|null} Cached data or null if not found/expired
+ */
+function loadFromLocalStorageCache(rectangleId) {
+    try {
+        const key = CACHE_CONFIG.CACHE_KEY_PREFIX + rectangleId;
+        const cached = localStorage.getItem(key);
+        
+        if (!cached) {
+            return null;
+        }
+
+        const cacheEntry = JSON.parse(cached);
+        
+        // Check if cache entry has expired
+        if (Date.now() - cacheEntry.timestamp > CACHE_CONFIG.CACHE_EXPIRY_MS) {
+            localStorage.removeItem(key);
+            removeCacheMetadata(rectangleId);
+            console.log(`Expired cache entry removed for rectangle ${rectangleId}`);
+            return null;
+        }
+
+        console.log(`Loaded rectangle ${rectangleId} from localStorage cache`);
+        return cacheEntry.data;
+    } catch (error) {
+        console.warn(`Failed to load rectangle ${rectangleId} from localStorage:`, error);
+        return null;
+    }
+}
+
+/**
+ * Checks if rectangle data exists in localStorage cache
+ * @param {string} rectangleId - Rectangle ID
+ * @returns {boolean} True if cached and not expired
+ */
+function isInLocalStorageCache(rectangleId) {
+    const key = CACHE_CONFIG.CACHE_KEY_PREFIX + rectangleId;
+    const cached = localStorage.getItem(key);
+    
+    if (!cached) {
+        return false;
+    }
+
+    try {
+        const cacheEntry = JSON.parse(cached);
+        return (Date.now() - cacheEntry.timestamp) <= CACHE_CONFIG.CACHE_EXPIRY_MS;
+    } catch (error) {
+        return false;
+    }
+}
+
+/**
+ * Clears all localStorage cache entries
+ */
+function clearLocalStorageCache() {
+    try {
+        const keys = Object.keys(localStorage);
+        let cleared = 0;
+        
+        for (const key of keys) {
+            if (key.startsWith(CACHE_CONFIG.CACHE_KEY_PREFIX)) {
+                localStorage.removeItem(key);
+                cleared++;
+            }
+        }
+        
+        // Clear metadata
+        localStorage.removeItem(CACHE_CONFIG.CACHE_METADATA_KEY);
+        
+        console.log(`Cleared ${cleared} cache entries from localStorage`);
+    } catch (error) {
+        console.warn('Failed to clear localStorage cache:', error);
+    }
+}
+
+/**
+ * Gets statistics about localStorage cache
+ * @returns {object} Cache statistics
+ */
+function getLocalStorageCacheStats() {
+    try {
+        const metadata = getCacheMetadata();
+        const keys = Object.keys(localStorage);
+        let count = 0;
+        let totalSize = 0;
+        
+        for (const key of keys) {
+            if (key.startsWith(CACHE_CONFIG.CACHE_KEY_PREFIX)) {
+                count++;
+                try {
+                    const entry = JSON.parse(localStorage.getItem(key));
+                    totalSize += entry.size || 0;
+                } catch (e) {
+                    // Skip corrupted entries
+                }
+            }
+        }
+        
+        return {
+            count: count,
+            sizeMB: (totalSize / (1024 * 1024)).toFixed(2),
+            sizeBytes: totalSize,
+            maxSizeMB: CACHE_CONFIG.MAX_CACHE_SIZE_MB,
+            expiryDays: CACHE_CONFIG.CACHE_EXPIRY_MS / (24 * 60 * 60 * 1000)
+        };
+    } catch (error) {
+        console.warn('Failed to get localStorage cache stats:', error);
+        return { count: 0, sizeMB: 0, sizeBytes: 0 };
+    }
+}
+
+/**
+ * Calculates the estimated size of data in bytes
+ * @param {any} data - Data to measure
+ * @returns {number} Estimated size in bytes
+ */
+function calculateDataSize(data) {
+    try {
+        return new Blob([JSON.stringify(data)]).size;
+    } catch (error) {
+        // Fallback estimation
+        return JSON.stringify(data).length * 2; // Rough UTF-16 estimate
+    }
+}
+
+/**
+ * Updates cache metadata
+ * @param {string} rectangleId - Rectangle ID
+ * @param {number} size - Entry size in bytes
+ */
+function updateCacheMetadata(rectangleId, size) {
+    try {
+        const metadata = getCacheMetadata();
+        metadata.entries[rectangleId] = {
+            size: size,
+            timestamp: Date.now()
+        };
+        metadata.totalSize += size;
+        
+        localStorage.setItem(CACHE_CONFIG.CACHE_METADATA_KEY, JSON.stringify(metadata));
+    } catch (error) {
+        console.warn('Failed to update cache metadata:', error);
+    }
+}
+
+/**
+ * Removes entry from cache metadata
+ * @param {string} rectangleId - Rectangle ID
+ */
+function removeCacheMetadata(rectangleId) {
+    try {
+        const metadata = getCacheMetadata();
+        if (metadata.entries[rectangleId]) {
+            metadata.totalSize -= metadata.entries[rectangleId].size || 0;
+            delete metadata.entries[rectangleId];
+            localStorage.setItem(CACHE_CONFIG.CACHE_METADATA_KEY, JSON.stringify(metadata));
+        }
+    } catch (error) {
+        console.warn('Failed to remove cache metadata:', error);
+    }
+}
+
+/**
+ * Gets cache metadata from localStorage
+ * @returns {object} Cache metadata
+ */
+function getCacheMetadata() {
+    try {
+        const metadata = localStorage.getItem(CACHE_CONFIG.CACHE_METADATA_KEY);
+        if (metadata) {
+            return JSON.parse(metadata);
+        }
+    } catch (error) {
+        console.warn('Failed to get cache metadata:', error);
+    }
+    
+    // Return default metadata structure
+    return {
+        entries: {},
+        totalSize: 0,
+        created: Date.now()
+    };
+}
+
+/**
+ * Manages cache size by removing oldest entries if over limit
+ */
+function manageCacheSize() {
+    try {
+        const stats = getLocalStorageCacheStats();
+        const maxSizeBytes = CACHE_CONFIG.MAX_CACHE_SIZE_MB * 1024 * 1024;
+        
+        if (stats.sizeBytes > maxSizeBytes) {
+            const metadata = getCacheMetadata();
+            const entries = Object.entries(metadata.entries);
+            
+            // Sort by timestamp (oldest first)
+            entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+            
+            let removedSize = 0;
+            let removedCount = 0;
+            
+            for (const [rectangleId, entryMeta] of entries) {
+                if (stats.sizeBytes - removedSize <= maxSizeBytes * 0.8) {
+                    break; // Keep cache at 80% of max size
+                }
+                
+                const key = CACHE_CONFIG.CACHE_KEY_PREFIX + rectangleId;
+                localStorage.removeItem(key);
+                removedSize += entryMeta.size || 0;
+                removedCount++;
+                removeCacheMetadata(rectangleId);
+            }
+            
+            if (removedCount > 0) {
+                console.log(`Cache size management: removed ${removedCount} entries (${(removedSize / (1024 * 1024)).toFixed(2)}MB)`);
+            }
+        }
+    } catch (error) {
+        console.warn('Failed to manage cache size:', error);
+    }
+}
+
+/**
+ * Initialize localStorage cache (load existing cache entries into memory)
+ */
+function initializeLocalStorageCache() {
+    try {
+        const keys = Object.keys(localStorage);
+        let loadedCount = 0;
+        
+        for (const key of keys) {
+            if (key.startsWith(CACHE_CONFIG.CACHE_KEY_PREFIX)) {
+                const rectangleId = key.replace(CACHE_CONFIG.CACHE_KEY_PREFIX, '');
+                const cachedData = loadFromLocalStorageCache(rectangleId);
+                
+                if (cachedData) {
+                    // Load into memory cache for immediate access
+                    loadedRectangles.set(rectangleId, {
+                        bounds: getRectangleBounds(rectangleId.replace('_lowzoom', '')),
+                        data: cachedData,
+                        timestamp: Date.now(),
+                        status: 'loaded'
+                    });
+                    loadedCount++;
+                }
+            }
+        }
+        
+        if (loadedCount > 0) {
+            console.log(`Initialized localStorage cache: loaded ${loadedCount} cached rectangles into memory`);
+        }
+    } catch (error) {
+        console.warn('Failed to initialize localStorage cache:', error);
+    }
 }
