@@ -1,1 +1,37 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M18 8v-3h-4v3h-4v-3h-4v3h-2v10h2v-3h4v3h4v-3h4v3h2v-10h-2zm-6-1h-2v-1h2v1zm4 0h-2v-1h2v1z"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+  <defs>
+    <linearGradient id="seatGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#8B7355;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#5D4E37;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="backrestGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#A0926B;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#6B5B3D;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="legGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#7A6B4F;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4A3D2A;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Shadow -->
+  <ellipse cx="12.5" cy="20.5" rx="8" ry="1.5" fill="#000" opacity="0.2"/>
+  
+  <!-- Left leg -->
+  <rect x="5" y="14" width="1.5" height="6" fill="url(#legGradient)" rx="0.3"/>
+  
+  <!-- Right leg -->
+  <rect x="17.5" y="14" width="1.5" height="6" fill="url(#legGradient)" rx="0.3"/>
+  
+  <!-- Seat -->
+  <rect x="4" y="12" width="16" height="3" fill="url(#seatGradient)" rx="0.5"/>
+  <rect x="4.2" y="12.2" width="15.6" height="0.6" fill="#9A8467" opacity="0.8" rx="0.3"/>
+  
+  <!-- Backrest -->
+  <rect x="4.5" y="5" width="15" height="8" fill="url(#backrestGradient)" rx="0.5"/>
+  <rect x="4.7" y="5.2" width="14.6" height="0.6" fill="#B5A678" opacity="0.8" rx="0.3"/>
+  
+  <!-- Armrests -->
+  <rect x="3.5" y="10" width="2" height="4" fill="url(#seatGradient)" rx="0.5"/>
+  <rect x="18.5" y="10" width="2" height="4" fill="url(#seatGradient)" rx="0.5"/>
+</svg>
