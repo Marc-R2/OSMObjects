@@ -158,6 +158,110 @@ button.leaflet-control-geocoder-icon {
 	padding: 5px;
 }
 
+/* Enhanced location display styles */
+.location-notification {
+    position: fixed;
+    top: 80px;
+    right: 10px;
+    z-index: 1000;
+    padding: 10px 15px;
+    border-radius: 5px;
+    color: white;
+    font-weight: bold;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    display: none;
+    max-width: 300px;
+    word-wrap: break-word;
+}
+
+.location-notification.success {
+    background-color: #4CAF50;
+    border-left: 4px solid #45a049;
+}
+
+.location-notification.error {
+    background-color: #f44336;
+    border-left: 4px solid #da190b;
+}
+
+.location-notification.warning {
+    background-color: #ff9800;
+    border-left: 4px solid #e68900;
+}
+
+.location-notification.info {
+    background-color: #2196F3;
+    border-left: 4px solid #1976D2;
+}
+
+.location-info {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 999;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 5px;
+    font-family: monospace;
+    font-size: 12px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    display: none;
+    pointer-events: none;
+}
+
+.location-coordinates {
+    font-weight: bold;
+    margin-bottom: 2px;
+}
+
+.location-accuracy {
+    font-size: 10px;
+    opacity: 0.8;
+    text-align: center;
+}
+
+.location-track-button {
+    width: 30px !important;
+    height: 30px !important;
+    line-height: 30px !important;
+    text-align: center !important;
+    font-size: 14px !important;
+    text-decoration: none !important;
+    cursor: pointer !important;
+    border: 2px solid rgba(0,0,0,0.2) !important;
+    background-color: #fff !important;
+    transition: all 0.2s ease !important;
+}
+
+.location-track-button:hover {
+    background-color: #f4f4f4 !important;
+    transform: scale(1.05);
+}
+
+.location-track-button:active {
+    transform: scale(0.95);
+}
+
+/* Enhanced locate control button styling */
+.leaflet-control-locate a {
+    font-size: 18px !important;
+    width: 34px !important;
+    height: 34px !important;
+    line-height: 34px !important;
+}
+
+.leaflet-control-locate.active a {
+    background-color: #3388ff !important;
+    color: white !important;
+}
+
+.leaflet-control-locate.following a {
+    background-color: #ff3388 !important;
+    color: white !important;
+}
+
 #lang { 
 	/*background-color: white;
 	text-align: center; 
