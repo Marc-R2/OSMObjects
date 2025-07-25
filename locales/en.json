@@ -65,5 +65,11 @@
 	"ajaxerror_error" : "Error while loading data.",
 	"ajaxerror_abort" : "Loading data aborted.",
 	"ajaxerror_parseerror" : "Data parsing failed.",
-	"ajaxerror_unknown" : "Unknown error."
+	"ajaxerror_unknown" : "Unknown error.",
+	"bench" : "Bench",
+	"bench_backrest" : "Backrest",
+	"bench_material" : "Material", 
+	"bench_seats" : "Number of seats",
+	"bench_colour" : "Color",
+	"bench_lit" : "Lighting"
 }

@@ -562,7 +562,7 @@ function parseOSM(data)
 
 					let markerLocation = new L.LatLng(EleLatNew,EleLonNew);
 
-					let Icon = getMarkerIcon(L,tagLightSource, tagLightMethod, tagLightColour, tagLightFlash, lightDirectionArray[j], tagLightShape, tagLightHeight, tagNavigationaid, refArray[j]);
+					let Icon = getMarkerIcon(L,tagLightSource, tagLightMethod, tagLightColour, tagLightFlash, lightDirectionArray[j], tagLightShape, tagLightHeight, tagNavigationaid, refArray[j], null, null, null, null, null, null);
 					let marker = new L.Marker(markerLocation,{icon : Icon});
 
 					if(EleText!="")
@@ -585,16 +585,65 @@ function parseOSM(data)
 			}
 
 		} else if (tagAmenity == "bench") {
-			let EleText = "<b>" + i18next.t("bench") + "</b><br><div class='infoblock'><table>";
+			// Extract bench-specific attributes
+			let benchBackrest, benchMaterial, benchSeats, benchColour, benchLit, benchBin;
+			
 			$(this).find('tag').each(function(){
 				let EleKey = $(this).attr("k");
 				let EleValue = $(this).attr("v");
-				EleText += "<tr><td><b>" + EleKey + ": </b></td><td>" + EleValue + "</td></tr>";
+				if (EleKey == "backrest") {
+					benchBackrest = EleValue;
+				} else if (EleKey == "material") {
+					benchMaterial = EleValue;
+				} else if (EleKey == "seats") {
+					benchSeats = EleValue;
+				} else if (EleKey == "colour" || EleKey == "color") {
+					benchColour = EleValue;
+				} else if (EleKey == "lit") {
+					benchLit = EleValue;
+				} else if (EleKey == "bin") {
+					benchBin = EleValue;
+				}
+			});
+
+			// Build descriptive popup
+			let EleText = "<b>" + i18next.t("bench") + "</b><br><div class='infoblock'><table>";
+			
+			// Show meaningful attributes first
+			if (benchBackrest) {
+				EleText += "<tr><td><b>" + i18next.t("bench_backrest") + ": </b></td><td>" + benchBackrest + "</td></tr>";
+			}
+			if (benchMaterial) {
+				EleText += "<tr><td><b>" + i18next.t("bench_material") + ": </b></td><td>" + benchMaterial + "</td></tr>";
+			}
+			if (benchSeats) {
+				EleText += "<tr><td><b>" + i18next.t("bench_seats") + ": </b></td><td>" + benchSeats + "</td></tr>";
+			}
+			if (benchColour) {
+				EleText += "<tr><td><b>" + i18next.t("bench_colour") + ": </b></td><td>" + benchColour + "</td></tr>";
+			}
+			if (benchLit) {
+				EleText += "<tr><td><b>" + i18next.t("bench_lit") + ": </b></td><td>" + benchLit + "</td></tr>";
+			}
+			if (benchBin) {
+				EleText += "<tr><td><b>Bin: </b></td><td>" + benchBin + "</td></tr>";
+			}
+			
+			// Show all other attributes
+			$(this).find('tag').each(function(){
+				let EleKey = $(this).attr("k");
+				let EleValue = $(this).attr("v");
+				// Skip attributes we already displayed above
+				if (EleKey != "amenity" && EleKey != "backrest" && EleKey != "material" && 
+					EleKey != "seats" && EleKey != "colour" && EleKey != "color" && 
+					EleKey != "lit" && EleKey != "bin") {
+					EleText += "<tr><td><b>" + EleKey + ": </b></td><td>" + EleValue + "</td></tr>";
+				}
 			});
 			EleText += "</table></div><br><a href='#' onclick='openinJOSM(\""+EleType+"\",\""+EleID+"\")'>edit in JOSM</a> | <a href='https://www.openstreetmap.org/"+EleType+"/"+EleID+"'>show in OSM</a>";
 
 			let markerLocation = new L.LatLng(EleLat, EleLon);
-			let Icon = getMarkerIcon(L, "bench");
+			let Icon = getMarkerIcon(L, "bench", null, null, null, null, null, null, null, null, benchBackrest, benchMaterial, benchSeats, benchColour, benchLit, benchBin);
 			let marker = new L.Marker(markerLocation, {
 				icon: Icon
 			});
@@ -810,10 +859,25 @@ function getLightMount(value) {
 	return result;
 }
 
-function getMarkerIcon(L,lightSource,lightMethod,lightColour,lightFlash,lightDirection,lightShape,lightHeight,navigationaid,ref) {
+function getMarkerIcon(L,lightSource,lightMethod,lightColour,lightFlash,lightDirection,lightShape,lightHeight,navigationaid,ref,benchBackrest,benchMaterial,benchSeats,benchColour,benchLit,benchBin) {
 	let symbolURL = "electric";
 	if (lightSource == "bench") {
-		symbolURL = "bench";
+		// Select bench icon based on attributes (prioritized by visual impact)
+		if (benchLit == "yes") {
+			symbolURL = "bench_lit";
+		} else if (benchBin == "yes") {
+			symbolURL = "bench_bin";
+		} else if (benchMaterial == "wood") {
+			symbolURL = "bench_wood";
+		} else if (benchMaterial == "metal" || benchMaterial == "steel") {
+			symbolURL = "bench_metal";
+		} else if (benchBackrest == "yes") {
+			symbolURL = "bench_backrest";
+		} else if (benchBackrest == "no") {
+			symbolURL = "bench_no_backrest";
+		} else {
+			symbolURL = "bench"; // default bench icon
+		}
 	} else if (lightSource == "xmas") {
 		symbolURL = "xmastree";
 	} else if (navigationaid == "beacon") {
