@@ -20,6 +20,8 @@
 		<script src="js/clustering.js" type="text/javascript"></script>
 		<!-- Load enhanced location -->
 		<script src="js/enhanced_location.js" type="text/javascript"></script>
+		<!-- Load fuzzy search -->
+		<script src="js/fuzzy_search.js" type="text/javascript"></script>
 		<!-- Load jquery -->
 		<script src="jquery/jquery-1.12.4.min.js"></script>
 		<script src="jquery/jquery-ui.min.js"></script>
@@ -45,6 +47,7 @@
 		<script src="js/parse_scripts.js" type="text/javascript"></script>
 		<script src="js/rectangle_tests.js" type="text/javascript"></script>
 		<script src="js/location_tests.js" type="text/javascript"></script>
+		<script src="js/search_tests.js" type="text/javascript"></script>
 
 	</head>
 
@@ -187,14 +190,8 @@
 			map.addControl(opacitySlider);
 			opacitySlider.setOpacityLayer(current_layer);
 
-			// add geocoder
-			var geocoder = L.Control.geocoder({
-				defaultMarkGeocode: false
-			}).on('markgeocode', function(e) {
-				var bbox = e.geocode.bbox;
-				map.fitBounds(bbox,{maxZoom : 14});
-			})
-			geocoder.addTo(map);
+			// Initialize enhanced search
+			initializeEnhancedSearch(map);
 			
 			loadingcounter = 0;
 
@@ -264,8 +261,10 @@
 		<div id="options_cont">
 			<div id="options">
 				<small><a target="_new" href="./about.html" id="aboutmap">About this map</a></small>
-				<small> | <a href="#" onclick="clearRectangleCache(); console.log('Rectangle cache cleared');" id="clearcache">Clear Cache</a></small>
-				<small> | <a href="#" onclick="console.log('Cache stats:', getRectangleCacheStats());" id="cachestats">Cache Stats</a></small>
+				<small> | <a href="#" onclick="clearRectangleCache(); console.log('Rectangle cache (memory + localStorage) cleared');" id="clearcache">Clear Cache</a></small>
+				<small> | <a href="#" onclick="const stats = getRectangleCacheStats(); console.log('Cache stats:', stats); alert(`Cache Stats:\nMemory: ${stats.memory.loaded} loaded\nLocalStorage: ${stats.localStorage.count} cached (${stats.localStorage.sizeMB}MB)\nTotal capacity: ${stats.localStorage.maxSizeMB}MB`);" id="cachestats">Cache Stats</a></small>
+				<small> | <a href="#" onclick="const stats = getSearchStats(); console.log('Search stats:', stats); alert(`Search Stats:\nHistory: ${stats.history} items\nFavorites: ${stats.favorites} items\nFuzzy matching: ${stats.fuzzyEnabled ? 'enabled' : 'disabled'}`);" id="searchstats">Search Stats</a></small>
+				<small> | <a href="#" onclick="clearAllSearchData(); console.log('All search data cleared');" id="clearsearchdata">Clear Search Data</a></small>
 			</div>
 		</div>
 
