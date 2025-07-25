@@ -139,6 +139,9 @@
 			initLoadingOverlays(map);
 			var loadingOverlays = getLoadingOverlayLayers();
 
+			// Initialize rectangle cache system with TTL and localStorage
+			initializeRectangleCache();
+
 			var baseMaps = {
 				"OpenStreetMap Carto": OSM_carto,
 				"OpenStreetMap DE": OSM_de,
