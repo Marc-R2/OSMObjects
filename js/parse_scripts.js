@@ -289,7 +289,13 @@ function parseOSM(data)
 	AviationLayer.clearLayers();
 	LitStreetsLayer.clearLayers();
 	UnLitStreetsLayer.clearLayers();
-	BenchesLayer.clearLayers();
+	
+	// Clear benches layer - handle both clustered and regular layers
+	if (CLUSTERING_SETTINGS.CLUSTER_BENCHES && BenchesLayer.clearMarkers) {
+		BenchesLayer.clearMarkers();
+	} else {
+		BenchesLayer.clearLayers();
+	}
 
 	$(data).find('node,way').each(function() {
 		let EleID = $(this).attr("id");
@@ -593,7 +599,13 @@ function parseOSM(data)
 				icon: Icon
 			});
 			marker.bindPopup(EleText);
-			BenchesLayer.addLayer(marker);
+			
+			// Use clustering if enabled, otherwise add to regular layer
+			if (CLUSTERING_SETTINGS.CLUSTER_BENCHES && BenchesLayer.addMarker) {
+				BenchesLayer.addMarker(marker);
+			} else {
+				BenchesLayer.addLayer(marker);
+			}
 		} else if (tagLit == "no" || tagLit == "disused") {
 			// Draw ways, which have no popup
 			if(tagArea) {
@@ -1237,9 +1249,9 @@ function loadDataLowZoomRectangles(lat1, lon1, lat2, lon2) {
 }
 
 /**
- * Load data for a single rectangle
+ * Load data for a single rectangle with fallback endpoint support
  */
-function loadSingleRectangleData(rectangleId, isLowZoom = false) {
+function loadSingleRectangleData(rectangleId, isLowZoom = false, endpointIndex = 0) {
 	// Extract base rectangle ID (remove _lowzoom suffix if present)
 	const baseRectId = rectangleId.replace('_lowzoom', '');
 	const bounds = getRectangleBounds(baseRectId);
@@ -1289,9 +1301,12 @@ function loadSingleRectangleData(rectangleId, isLowZoom = false) {
 		RequestProtocol = "http://";
 	}
 	
-	RequestURL = RequestProtocol + "overpass-api.de/api/interpreter?data=" + XMLRequestText;
+	// Use current endpoint from the list
+	const currentEndpoint = OVERPASS_ENDPOINTS[endpointIndex % OVERPASS_ENDPOINTS.length];
+	RequestURL = RequestProtocol + currentEndpoint + "?data=" + XMLRequestText;
 	
 	console.log(`Loading rectangle ${rectangleId} with bounds:`, bounds);
+	console.log(`Using endpoint: ${currentEndpoint} (attempt ${endpointIndex + 1})`);
 	
 	//AJAX REQUEST
 	$.ajax({
@@ -1299,7 +1314,7 @@ function loadSingleRectangleData(rectangleId, isLowZoom = false) {
 		type: 'GET',
 		crossDomain: true,
 		success: function(data) {
-			console.log(`Successfully loaded rectangle ${rectangleId}`);
+			console.log(`Successfully loaded rectangle ${rectangleId} from ${currentEndpoint}`);
 			
 			if (loadingcounter==1) {
 				$( "#loading_text" ).html("")
@@ -1321,10 +1336,34 @@ function loadSingleRectangleData(rectangleId, isLowZoom = false) {
 			}
 		},
 		error: function(jqXHR, textStatus, errorThrown){
-			console.log(`Failed to load rectangle ${rectangleId}:`, textStatus);
+			console.log(`Failed to load rectangle ${rectangleId} from ${currentEndpoint}:`, textStatus, jqXHR.status);
 			
+			loadingcounter--;
+			
+			// Check if we should try another endpoint
+			const nextEndpointIndex = endpointIndex + 1;
+			const isLastEndpoint = nextEndpointIndex >= OVERPASS_ENDPOINTS.length;
+			const isTooManyRequests = jqXHR.status === 429;
+			const isServerError = jqXHR.status >= 500;
+			
+			// Retry with next endpoint if we have more endpoints and certain error conditions
+			if (!isLastEndpoint && (isTooManyRequests || isServerError || textStatus === "timeout")) {
+				console.log(`Retrying rectangle ${rectangleId} with next endpoint...`);
+				// Remove from loading state temporarily to allow retry
+				loadingRectangles.delete(rectangleId);
+				updateLoadingOverlays();
+				
+				// Retry with next endpoint after a short delay
+				setTimeout(() => {
+					loadSingleRectangleData(rectangleId, isLowZoom, nextEndpointIndex);
+				}, 1000);
+				return;
+			}
+			
+			// All endpoints failed or non-retryable error
 			markRectangleFailed(rectangleId);
 			
+			let textStatus_value;
 			if( i18next.isInitialized) {
 				if (textStatus == "timeout" || textStatus == "error" || textStatus == "abort" || textStatus == "parseerror") {
 					textStatus_value = i18next.t("ajaxerror_" + textStatus);
@@ -1332,13 +1371,16 @@ function loadSingleRectangleData(rectangleId, isLowZoom = false) {
 					textStatus_value = i18next.t("ajaxerror_unknown");
 				}
 			} else { // fallback in case i18next is not initalized yet.
-				textStatus_value = "Error while loading data";
+				if (isTooManyRequests) {
+					textStatus_value = "Too Many Requests - Try again later";
+				} else {
+					textStatus_value = "Error while loading data";
+				}
 			}
 			
 			$( "#loading" ).attr("class", "error");
 			$( "#loading_icon" ).attr("class", "loading_error")
 			$( "#loading_text" ).html("&nbsp;" + textStatus_value)
-			loadingcounter--;
 		},
 		timeout: 10000 // timeout after 10s
 	});
