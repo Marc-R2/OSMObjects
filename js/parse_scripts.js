@@ -186,8 +186,7 @@ function loadData(bbox) {
 	XMLRequestText += '); out qt; '
 	//console.log ( XMLRequestText );
 
-	//URL Codieren
-	XMLRequestText = encodeURIComponent(XMLRequestText);
+	//URL encoding handled by multiple_endpoints.js
 
 	if (location.protocol == 'https:') {
 		RequestProtocol = "https://";
@@ -1286,8 +1285,7 @@ function loadSingleRectangleData(rectangleId, isLowZoom = false) {
 		XMLRequestText += '); out qt; '
 	}
 	
-	//URL Codieren
-	XMLRequestText = encodeURIComponent(XMLRequestText);
+	//URL encoding handled by multiple_endpoints.js
 	
 	if (location.protocol == 'https:') {
 		RequestProtocol = "https://";
