@@ -42,6 +42,7 @@
 
 		<script src="js/parse_scripts.js" type="text/javascript"></script>
 		<script src="js/rectangle_tests.js" type="text/javascript"></script>
+		<script src="js/cache_tests.js" type="text/javascript"></script>
 
 	</head>
 
@@ -135,6 +136,9 @@
 			// Initialize loading overlays after map creation
 			initLoadingOverlays(map);
 			var loadingOverlays = getLoadingOverlayLayers();
+			
+			// Initialize localStorage cache
+			initializeLocalStorageCache();
 
 			var baseMaps = {
 				"OpenStreetMap Carto": OSM_carto,
@@ -272,8 +276,9 @@
 		<div id="options_cont">
 			<div id="options">
 				<small><a target="_new" href="./about.html" id="aboutmap">About this map</a></small>
-				<small> | <a href="#" onclick="clearRectangleCache(); console.log('Rectangle cache cleared');" id="clearcache">Clear Cache</a></small>
-				<small> | <a href="#" onclick="console.log('Cache stats:', getRectangleCacheStats());" id="cachestats">Cache Stats</a></small>
+				<small> | <a href="#" onclick="clearRectangleCache(); console.log('Rectangle cache (memory + localStorage) cleared');" id="clearcache">Clear Cache</a></small>
+				<small> | <a href="#" onclick="const stats = getRectangleCacheStats(); console.log('Cache stats:', stats); alert(`Cache Stats:\nMemory: ${stats.memory.loaded} loaded\nLocalStorage: ${stats.localStorage.count} cached (${stats.localStorage.sizeMB}MB)\nTotal capacity: ${stats.localStorage.maxSizeMB}MB`);" id="cachestats">Cache Stats</a></small>
+				<small> | <a href="#" onclick="clearLocalStorageCache(); console.log('localStorage cache cleared');" id="clearlocalcache">Clear Local Cache</a></small>
 			</div>
 		</div>
 
