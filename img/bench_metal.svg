@@ -1,1 +1,53 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M18 4v4h-4v1h-4v-1h-4v-4h-2v14h2v-3h4v3h4v-3h4v3h2v-14h-2zm-6 3h-2v-1h2v1zm4 0h-2v-1h2v1z" fill="#888"/><path d="M6 2h12v4h-12z" fill="#666"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+  <defs>
+    <linearGradient id="metalSeatGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#C0C0C0;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#A9A9A9;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#696969;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="metalBackrestGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#DCDCDC;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#C0C0C0;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#808080;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="metalLegGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#A9A9A9;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#696969;stop-opacity:1" />
+    </linearGradient>
+    <radialGradient id="metalShine" cx="30%" cy="30%" r="60%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:0.6" />
+      <stop offset="100%" style="stop-color:#FFFFFF;stop-opacity:0" />
+    </radialGradient>
+  </defs>
+  
+  <!-- Shadow -->
+  <ellipse cx="12.5" cy="20.5" rx="8" ry="1.5" fill="#000" opacity="0.2"/>
+  
+  <!-- Left leg -->
+  <rect x="5" y="14" width="1.5" height="6" fill="url(#metalLegGradient)" rx="0.3"/>
+  
+  <!-- Right leg -->
+  <rect x="17.5" y="14" width="1.5" height="6" fill="url(#metalLegGradient)" rx="0.3"/>
+  
+  <!-- Seat -->
+  <rect x="4" y="12" width="16" height="3" fill="url(#metalSeatGradient)" rx="0.5"/>
+  <rect x="4" y="12" width="16" height="3" fill="url(#metalShine)" rx="0.5"/>
+  <rect x="4.2" y="12.2" width="15.6" height="0.6" fill="#E5E5E5" opacity="0.9" rx="0.3"/>
+  
+  <!-- Backrest -->
+  <rect x="4.5" y="5" width="15" height="8" fill="url(#metalBackrestGradient)" rx="0.5"/>
+  <rect x="4.5" y="5" width="15" height="8" fill="url(#metalShine)" rx="0.5"/>
+  <rect x="4.7" y="5.2" width="14.6" height="0.6" fill="#F0F0F0" opacity="0.9" rx="0.3"/>
+  
+  <!-- Metal rivets/bolts -->
+  <circle cx="6" cy="7" r="0.3" fill="#778899"/>
+  <circle cx="18" cy="7" r="0.3" fill="#778899"/>
+  <circle cx="6" cy="10" r="0.3" fill="#778899"/>
+  <circle cx="18" cy="10" r="0.3" fill="#778899"/>
+  
+  <!-- Armrests -->
+  <rect x="3.5" y="10" width="2" height="4" fill="url(#metalSeatGradient)" rx="0.5"/>
+  <rect x="18.5" y="10" width="2" height="4" fill="url(#metalSeatGradient)" rx="0.5"/>
+  <rect x="3.5" y="10" width="2" height="4" fill="url(#metalShine)" opacity="0.7" rx="0.5"/>
+  <rect x="18.5" y="10" width="2" height="4" fill="url(#metalShine)" opacity="0.7" rx="0.5"/>
+</svg>
