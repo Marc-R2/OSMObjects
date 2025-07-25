@@ -16,6 +16,8 @@
 		<script src="js/settings.js" type="text/javascript"></script>
 		<!-- Load rectangle manager -->
 		<script src="js/rectangle_manager.js" type="text/javascript"></script>
+		<!-- Load clustering -->
+		<script src="js/clustering.js" type="text/javascript"></script>
 		<!-- Load jquery -->
 		<script src="jquery/jquery-1.12.4.min.js"></script>
 		<script src="jquery/jquery-ui.min.js"></script>
@@ -95,12 +97,21 @@
 				maxZoom : 19,
 				minZoom : MIN_ZOOM
 			});
-			var BenchesLayer = new L.LayerGroup([],{
-				maxZoom : 19,
-				minZoom : MIN_ZOOM
-			});
+			var BenchesLayer = CLUSTERING_SETTINGS.CLUSTER_BENCHES ? 
+				createClusteredLayerGroup({
+					maxZoom: CLUSTERING_SETTINGS.CLUSTER_MAX_ZOOM,
+					radius: CLUSTERING_SETTINGS.CLUSTER_RADIUS,
+					minZoom: CLUSTERING_SETTINGS.CLUSTER_MIN_ZOOM
+				}) : 
+				new L.LayerGroup([],{
+					maxZoom : 19,
+					minZoom : MIN_ZOOM
+				});
 
 			var OverpassAttrib = 'Data via <a href="http://www.overpass-api.de/">Overpass API</a>';
+			
+			// Initialize loading overlays after map is created
+			var loadingOverlays = null;
 			
 			var OSM_carto = L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 				maxZoom: 19,
@@ -120,6 +131,10 @@
 			});
 
 			var map = new L.Map('map');
+
+			// Initialize loading overlays after map creation
+			initLoadingOverlays(map);
+			var loadingOverlays = getLoadingOverlayLayers();
 
 			var baseMaps = {
 				"OpenStreetMap Carto": OSM_carto,
@@ -143,7 +158,10 @@
 				"<span id='layer_aviation_lights'>Aviation Lights</span>": AviationLayer,
 				"<span id='layer_lit_streets'>Lit Streets</span>": LitStreetsLayer,
 				"<span id='layer_unlit_streets'>Unlit Streets</span>": UnLitStreetsLayer,
-				"<span id='layer_benches'>Benches</span>": BenchesLayer
+				"<span id='layer_benches'>Benches</span>": BenchesLayer,
+				"<span id='layer_loading_areas'>Loading Areas</span>": loadingOverlays.loadingOverlayLayer,
+				"<span id='layer_loaded_areas'>Loaded Areas</span>": loadingOverlays.loadedOverlayLayer,
+				"<span id='layer_error_areas'>Error Areas</span>": loadingOverlays.errorOverlayLayer
 			};
 
 			// add locate control:			

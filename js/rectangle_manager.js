@@ -139,6 +139,7 @@ function shouldRetryRectangle(rectangleId) {
  */
 function markRectangleLoading(rectangleId) {
     loadingRectangles.add(rectangleId);
+    updateLoadingOverlays();
 }
 
 /**
@@ -151,11 +152,13 @@ function markRectangleLoaded(rectangleId, data) {
     failedRectangles.delete(rectangleId);
     
     loadedRectangles.set(rectangleId, {
-        bounds: getRectangleBounds(rectangleId),
+        bounds: getRectangleBounds(rectangleId.replace('_lowzoom', '')),
         data: data,
         timestamp: Date.now(),
         status: 'loaded'
     });
+    
+    updateLoadingOverlays();
 }
 
 /**
@@ -170,6 +173,8 @@ function markRectangleFailed(rectangleId) {
         attempts: current.attempts + 1,
         lastFailTime: Date.now()
     });
+    
+    updateLoadingOverlays();
 }
 
 /**
@@ -210,5 +215,125 @@ function getRectangleCacheStats() {
         loaded: loadedRectangles.size,
         loading: loadingRectangles.size,
         failed: failedRectangles.size
+    };
+}
+
+// Visual overlay layers for loading states
+let loadingOverlayLayer = null;
+let loadedOverlayLayer = null; 
+let errorOverlayLayer = null;
+
+/**
+ * Initialize loading state overlay layers
+ * @param {object} map - Leaflet map instance
+ */
+function initLoadingOverlays(map) {
+    loadingOverlayLayer = new L.LayerGroup([], {
+        maxZoom: 19,
+        minZoom: MIN_ZOOM
+    });
+    
+    loadedOverlayLayer = new L.LayerGroup([], {
+        maxZoom: 19,
+        minZoom: MIN_ZOOM
+    });
+    
+    errorOverlayLayer = new L.LayerGroup([], {
+        maxZoom: 19,
+        minZoom: MIN_ZOOM
+    });
+    
+    // Add error overlay by default (as per requirements)
+    if (LOADING_OVERLAY_SETTINGS.SHOW_ERROR_OVERLAYS) {
+        map.addLayer(errorOverlayLayer);
+    }
+    
+    // Add loading overlay if enabled
+    if (LOADING_OVERLAY_SETTINGS.SHOW_LOADING_OVERLAYS) {
+        map.addLayer(loadingOverlayLayer);
+    }
+    
+    // Add loaded overlay if enabled
+    if (LOADING_OVERLAY_SETTINGS.SHOW_LOADED_OVERLAYS) {
+        map.addLayer(loadedOverlayLayer);
+    }
+}
+
+/**
+ * Updates visual overlays for rectangle loading states
+ */
+function updateLoadingOverlays() {
+    if (!loadingOverlayLayer || !loadedOverlayLayer || !errorOverlayLayer) {
+        return; // Overlays not initialized
+    }
+    
+    // Clear existing overlays
+    loadingOverlayLayer.clearLayers();
+    loadedOverlayLayer.clearLayers();
+    errorOverlayLayer.clearLayers();
+    
+    // Add loading rectangles
+    loadingRectangles.forEach(rectangleId => {
+        const baseRectId = rectangleId.replace('_lowzoom', '');
+        const bounds = getRectangleBounds(baseRectId);
+        const rectangle = L.rectangle([
+            [bounds.south, bounds.west],
+            [bounds.north, bounds.east]
+        ], LOADING_OVERLAY_SETTINGS.LOADING_STYLE);
+        
+        rectangle.bindTooltip(`Loading: ${baseRectId}`, {permanent: false});
+        loadingOverlayLayer.addLayer(rectangle);
+    });
+    
+    // Add loaded rectangles  
+    loadedRectangles.forEach((rectData, rectangleId) => {
+        if (rectData.status === 'loaded') {
+            const baseRectId = rectangleId.replace('_lowzoom', '');
+            const bounds = getRectangleBounds(baseRectId);
+            const rectangle = L.rectangle([
+                [bounds.south, bounds.west],
+                [bounds.north, bounds.east]
+            ], LOADING_OVERLAY_SETTINGS.LOADED_STYLE);
+            
+            rectangle.bindTooltip(`Loaded: ${baseRectId}`, {permanent: false});
+            loadedOverlayLayer.addLayer(rectangle);
+        }
+    });
+    
+    // Add failed rectangles with click-to-retry functionality
+    failedRectangles.forEach((failInfo, rectangleId) => {
+        const baseRectId = rectangleId.replace('_lowzoom', '');
+        const bounds = getRectangleBounds(baseRectId);
+        const rectangle = L.rectangle([
+            [bounds.south, bounds.west], 
+            [bounds.north, bounds.east]
+        ], LOADING_OVERLAY_SETTINGS.ERROR_STYLE);
+        
+        rectangle.bindTooltip(`Failed: ${baseRectId} (attempts: ${failInfo.attempts}) - Click to retry`, {permanent: false});
+        
+        // Add click-to-retry functionality
+        rectangle.on('click', function() {
+            if (shouldRetryRectangle(rectangleId)) {
+                console.log(`Retrying failed rectangle: ${rectangleId}`);
+                const isLowZoom = rectangleId.includes('_lowzoom');
+                loadSingleRectangleData(rectangleId, isLowZoom);
+            } else {
+                console.log(`Rectangle ${rectangleId} has exceeded max retry attempts`);
+            }
+        });
+        
+        errorOverlayLayer.addLayer(rectangle);
+    });
+}
+
+/**
+ * Get the overlay layers for layer control
+ * @returns {object} Object with overlay layer names and instances
+ */
+function getLoadingOverlayLayers() {
+    return {
+        loadingOverlayLayer,
+        loadedOverlayLayer,
+        errorOverlayLayer
     };
 }
