@@ -336,6 +336,14 @@ function runAllTests() {
         testEndpointFailover()
     ];
     
+    // Add cache tests if available
+    if (typeof runAllCacheTests === 'function') {
+        console.log("\n" + "=".repeat(50));
+        console.log("CACHE MANAGER TESTS");
+        console.log("=".repeat(50));
+        results.push(runAllCacheTests());
+    }
+    
     const allPassed = results.every(result => result === true);
     
     console.log(`\n${'='.repeat(50)}`);
