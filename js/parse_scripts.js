@@ -1320,6 +1320,28 @@ function loadSingleRectangleData(rectangleId, isLowZoom = false, endpointIndex =
 	const baseRectId = rectangleId.replace('_lowzoom', '');
 	const bounds = getRectangleBounds(baseRectId);
 	
+	// Check cache first
+	if (window.CacheManager) {
+		const cachedData = window.CacheManager.getCachedData(baseRectId, isLowZoom);
+		if (cachedData) {
+			console.log(`Using cached data for rectangle ${rectangleId}`);
+			
+			// Store the cached data in rectangle cache for current session
+			markRectangleLoaded(rectangleId, cachedData);
+			
+			// Re-render the current view with cached data
+			const currentBounds = map.getBounds();
+			const currentRectangles = getRectanglesInView(currentBounds);
+			if (isLowZoom) {
+				mergeAndRenderRectangleData(currentRectangles.map(id => id + '_lowzoom'), true);
+			} else {
+				mergeAndRenderRectangleData(currentRectangles, false);
+			}
+			
+			return; // Exit early with cached data
+		}
+	}
+	
 	markRectangleLoading(rectangleId);
 	
 	$( "#loading_text" ).text("")
@@ -1379,6 +1401,11 @@ function loadSingleRectangleData(rectangleId, isLowZoom = false, endpointIndex =
 		crossDomain: true,
 		success: function(data) {
 			console.log(`Successfully loaded rectangle ${rectangleId} from ${currentEndpoint}`);
+			
+			// Cache the API response
+			if (window.CacheManager) {
+				window.CacheManager.setCachedData(baseRectId, data, isLowZoom);
+			}
 			
 			if (loadingcounter==1) {
 				$( "#loading_text" ).html("")
