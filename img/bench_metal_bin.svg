@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+  <defs>
+    <linearGradient id="metalSeatGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#E8E8E8;stop-opacity:1" />
+      <stop offset="30%" style="stop-color:#C0C0C0;stop-opacity:1" />
+      <stop offset="70%" style="stop-color:#A9A9A9;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#808080;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="metalBackrestGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#F5F5F5;stop-opacity:1" />
+      <stop offset="30%" style="stop-color:#DCDCDC;stop-opacity:1" />
+      <stop offset="70%" style="stop-color:#C0C0C0;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#A9A9A9;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="metalLegGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#C0C0C0;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#808080;stop-opacity:1" />
+    </linearGradient>
+    <radialGradient id="metalShine" cx="25%" cy="25%" r="70%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:0.9" />
+      <stop offset="50%" style="stop-color:#FFFFFF;stop-opacity:0.6" />
+      <stop offset="100%" style="stop-color:#FFFFFF;stop-opacity:0" />
+    </radialGradient>
+    <pattern id="brushedMetal" patternUnits="userSpaceOnUse" width="1" height="8">
+      <rect width="1" height="8" fill="none"/>
+      <line x1="0.5" y1="0" x2="0.5" y2="8" stroke="#B0B0B0" stroke-width="0.3" opacity="0.4"/>
+    </pattern>
+    <linearGradient id="binGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4A4A4A;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#2F2F2F;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1A1A1A;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="binLidGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#666;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#333;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Shadow -->
+  <ellipse cx="12.5" cy="20.5" rx="8" ry="1.5" fill="#000" opacity="0.25"/>
+  
+  <!-- Left leg -->
+  <rect x="4.5" y="14" width="1.5" height="6" fill="url(#metalLegGradient)" rx="0.3"/>
+  
+  <!-- Right leg -->
+  <rect x="15.5" y="14" width="1.5" height="6" fill="url(#metalLegGradient)" rx="0.3"/>
+  
+  <!-- Seat (narrower for bin) -->
+  <rect x="3.5" y="12" width="14" height="3" fill="url(#metalSeatGradient)" rx="0.5"/>
+  <rect x="3.5" y="12" width="14" height="3" fill="url(#brushedMetal)" rx="0.5"/>
+  <rect x="3.5" y="12" width="14" height="3" fill="url(#metalShine)" rx="0.5"/>
+  <rect x="3.7" y="12.2" width="13.6" height="0.8" fill="#F8F8F8" opacity="0.9" rx="0.3"/>
+  
+  <!-- Backrest (narrower) -->
+  <rect x="4" y="5" width="13" height="8" fill="url(#metalBackrestGradient)" rx="0.5"/>
+  <rect x="4" y="5" width="13" height="8" fill="url(#brushedMetal)" rx="0.5"/>
+  <rect x="4" y="5" width="13" height="8" fill="url(#metalShine)" rx="0.5"/>
+  <rect x="4.2" y="5.2" width="12.6" height="0.8" fill="#FFFFFF" opacity="0.9" rx="0.3"/>
+  
+  <!-- Metal rivets/bolts -->
+  <circle cx="5.5" cy="7" r="0.4" fill="#696969"/>
+  <circle cx="15.5" cy="7" r="0.4" fill="#696969"/>
+  <circle cx="5.5" cy="10" r="0.4" fill="#696969"/>
+  <circle cx="15.5" cy="10" r="0.4" fill="#696969"/>
+  <circle cx="10.5" cy="8.5" r="0.3" fill="#696969"/>
+  
+  <!-- Rivet highlights -->
+  <circle cx="5.5" cy="7" r="0.2" fill="#E0E0E0"/>
+  <circle cx="15.5" cy="7" r="0.2" fill="#E0E0E0"/>
+  <circle cx="5.5" cy="10" r="0.2" fill="#E0E0E0"/>
+  <circle cx="15.5" cy="10" r="0.2" fill="#E0E0E0"/>
+  <circle cx="10.5" cy="8.5" r="0.15" fill="#E0E0E0"/>
+  
+  <!-- Metal edge reflections -->
+  <line x1="4" y1="5.5" x2="17" y2="5.5" stroke="#FFFFFF" stroke-width="0.3" opacity="0.8"/>
+  <line x1="3.5" y1="12.5" x2="17.5" y2="12.5" stroke="#FFFFFF" stroke-width="0.3" opacity="0.8"/>
+  
+  <!-- Armrests -->
+  <rect x="3" y="10" width="2" height="4" fill="url(#metalSeatGradient)" rx="0.5"/>
+  <rect x="16" y="10" width="2" height="4" fill="url(#metalSeatGradient)" rx="0.5"/>
+  <rect x="3" y="10" width="2" height="4" fill="url(#metalShine)" opacity="0.8" rx="0.5"/>
+  <rect x="16" y="10" width="2" height="4" fill="url(#metalShine)" opacity="0.8" rx="0.5"/>
+  
+  <!-- Prominent waste bin -->
+  <rect x="19" y="9" width="2.8" height="9" fill="url(#binGradient)" rx="0.4"/>
+  <rect x="19.1" y="9.2" width="2.6" height="0.8" fill="#555" rx="0.3"/>
+  
+  <!-- Bin lid -->
+  <ellipse cx="20.4" cy="9.5" rx="1.6" ry="0.5" fill="url(#binLidGradient)"/>
+  <ellipse cx="20.4" cy="9.2" rx="1.6" ry="0.5" fill="#777"/>
+  
+  <!-- Bin handle -->
+  <rect x="19.8" y="8.5" width="1.2" height="0.4" fill="#333" rx="0.2"/>
+  
+  <!-- Bin opening indicator -->
+  <ellipse cx="20.4" cy="9.8" rx="1.2" ry="0.3" fill="#000" opacity="0.6"/>
+  
+  <!-- Bin base -->
+  <ellipse cx="20.4" cy="18" rx="1.4" ry="0.3" fill="#222"/>
+  
+  <!-- Bin shadow -->
+  <ellipse cx="20.8" cy="19" rx="1.4" ry="0.6" fill="#000" opacity="0.3"/>
+  
+  <!-- Recycling symbol -->
+  <g stroke="#90EE90" stroke-width="0.3" fill="none" opacity="0.8">
+    <path d="M 19.8,12 Q 20.4,11.5 21,12"/>
+    <path d="M 20.6,13 Q 20.4,12.3 19.8,12.5"/>
+    <path d="M 20.2,13 Q 20.8,13.5 20.6,13"/>
+  </g>
+</svg>

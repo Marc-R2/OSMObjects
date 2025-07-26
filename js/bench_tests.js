@@ -28,15 +28,27 @@ function testBenchIcons() {
         assert(typeof icon === 'object', "getMarkerIcon returns object for bench with backrest");
     }
     
-    // Test bench icon selection priority
+    // Test bench icon selection priority with enhanced combinations
     {
-        // Test lit bench (highest priority)
-        const litIcon = getMarkerIcon(L, "bench", null, null, null, null, null, null, null, null, "yes", "wood", null, null, "yes", "yes");
-        assert(litIcon.options.html.includes('bench_lit.svg'), "Lit bench uses bench_lit icon");
+        // Test lit bench combinations (highest priority)
+        const litWoodIcon = getMarkerIcon(L, "bench", null, null, null, null, null, null, null, null, "yes", "wood", null, null, "yes", "yes");
+        assert(litWoodIcon.options.html.includes('bench_wood_lit.svg'), "Wood lit bench uses bench_wood_lit icon");
         
-        // Test bin bench (second priority)
-        const binIcon = getMarkerIcon(L, "bench", null, null, null, null, null, null, null, null, "yes", "wood", null, null, null, "yes");
-        assert(binIcon.options.html.includes('bench_bin.svg'), "Bench with bin uses bench_bin icon");
+        const litMetalIcon = getMarkerIcon(L, "bench", null, null, null, null, null, null, null, null, "yes", "metal", null, null, "yes", "yes");
+        assert(litMetalIcon.options.html.includes('bench_metal_lit.svg'), "Metal lit bench uses bench_metal_lit icon");
+        
+        const litIcon = getMarkerIcon(L, "bench", null, null, null, null, null, null, null, null, "yes", null, null, null, "yes", "yes");
+        assert(litIcon.options.html.includes('bench_lit.svg'), "Generic lit bench uses bench_lit icon");
+        
+        // Test bin bench combinations (second priority)
+        const binWoodIcon = getMarkerIcon(L, "bench", null, null, null, null, null, null, null, null, "yes", "wood", null, null, null, "yes");
+        assert(binWoodIcon.options.html.includes('bench_wood_bin.svg'), "Wood bench with bin uses bench_wood_bin icon");
+        
+        const binMetalIcon = getMarkerIcon(L, "bench", null, null, null, null, null, null, null, null, "yes", "metal", null, null, null, "yes");
+        assert(binMetalIcon.options.html.includes('bench_metal_bin.svg'), "Metal bench with bin uses bench_metal_bin icon");
+        
+        const binIcon = getMarkerIcon(L, "bench", null, null, null, null, null, null, null, null, "yes", null, null, null, null, "yes");
+        assert(binIcon.options.html.includes('bench_bin.svg'), "Generic bench with bin uses bench_bin icon");
         
         // Test wood material
         const woodIcon = getMarkerIcon(L, "bench", null, null, null, null, null, null, null, null, null, "wood", null, null, null, null);
@@ -45,6 +57,10 @@ function testBenchIcons() {
         // Test metal material
         const metalIcon = getMarkerIcon(L, "bench", null, null, null, null, null, null, null, null, null, "metal", null, null, null, null);
         assert(metalIcon.options.html.includes('bench_metal.svg'), "Metal bench uses bench_metal icon");
+        
+        // Test steel (same as metal)
+        const steelIcon = getMarkerIcon(L, "bench", null, null, null, null, null, null, null, null, null, "steel", null, null, null, null);
+        assert(steelIcon.options.html.includes('bench_metal.svg'), "Steel bench uses bench_metal icon");
         
         // Test backrest yes
         const backrestIcon = getMarkerIcon(L, "bench", null, null, null, null, null, null, null, null, "yes", null, null, null, null, null);
