@@ -862,11 +862,24 @@ function getLightMount(value) {
 function getMarkerIcon(L,lightSource,lightMethod,lightColour,lightFlash,lightDirection,lightShape,lightHeight,navigationaid,ref,benchBackrest,benchMaterial,benchSeats,benchColour,benchLit,benchBin) {
 	let symbolURL = "electric";
 	if (lightSource == "bench") {
-		// Select bench icon based on attributes (prioritized by visual impact)
+		// Select bench icon based on attributes with enhanced combination logic
+		// Priority: lighting > bin > material > backrest
 		if (benchLit == "yes") {
-			symbolURL = "bench_lit";
+			if (benchMaterial == "wood") {
+				symbolURL = "bench_wood_lit";
+			} else if (benchMaterial == "metal" || benchMaterial == "steel") {
+				symbolURL = "bench_metal_lit";
+			} else {
+				symbolURL = "bench_lit";
+			}
 		} else if (benchBin == "yes") {
-			symbolURL = "bench_bin";
+			if (benchMaterial == "wood") {
+				symbolURL = "bench_wood_bin";
+			} else if (benchMaterial == "metal" || benchMaterial == "steel") {
+				symbolURL = "bench_metal_bin";
+			} else {
+				symbolURL = "bench_bin";
+			}
 		} else if (benchMaterial == "wood") {
 			symbolURL = "bench_wood";
 		} else if (benchMaterial == "metal" || benchMaterial == "steel") {

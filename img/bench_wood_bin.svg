@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+  <defs>
+    <linearGradient id="woodSeatGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#D2691E;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#A0522D;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#654321;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="woodBackrestGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#F4A460;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#D2691E;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8B4513;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="woodLegGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#A0522D;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#654321;stop-opacity:1" />
+    </linearGradient>
+    <pattern id="woodGrain" patternUnits="userSpaceOnUse" width="16" height="1.5">
+      <rect width="16" height="1.5" fill="none"/>
+      <line x1="0" y1="0.7" x2="16" y2="0.7" stroke="#8B4513" stroke-width="0.4" opacity="0.8"/>
+      <line x1="0" y1="1.2" x2="16" y2="1.2" stroke="#654321" stroke-width="0.2" opacity="0.6"/>
+    </pattern>
+    <linearGradient id="binGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4A4A4A;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#2F2F2F;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1A1A1A;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="binLidGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#666;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#333;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Shadow -->
+  <ellipse cx="12.5" cy="20.5" rx="8" ry="1.5" fill="#000" opacity="0.25"/>
+  
+  <!-- Left leg -->
+  <rect x="4.5" y="14" width="1.5" height="6" fill="url(#woodLegGradient)" rx="0.3"/>
+  
+  <!-- Right leg -->
+  <rect x="15.5" y="14" width="1.5" height="6" fill="url(#woodLegGradient)" rx="0.3"/>
+  
+  <!-- Seat (narrower for bin) -->
+  <rect x="3.5" y="12" width="14" height="3" fill="url(#woodSeatGradient)" rx="0.5"/>
+  <rect x="3.5" y="12" width="14" height="3" fill="url(#woodGrain)" rx="0.5"/>
+  <rect x="3.7" y="12.2" width="13.6" height="0.8" fill="#F4A460" opacity="0.9" rx="0.3"/>
+  
+  <!-- Backrest (narrower) -->
+  <rect x="4" y="5" width="13" height="8" fill="url(#woodBackrestGradient)" rx="0.5"/>
+  <rect x="4" y="5" width="13" height="8" fill="url(#woodGrain)" rx="0.5"/>
+  <rect x="4.2" y="5.2" width="12.6" height="0.8" fill="#F4A460" opacity="0.9" rx="0.3"/>
+  
+  <!-- Wood grain lines -->
+  <line x1="4.5" y1="6.5" x2="16.5" y2="6.5" stroke="#A0522D" stroke-width="0.4" opacity="0.7"/>
+  <line x1="4.5" y1="8.5" x2="16.5" y2="8.5" stroke="#8B4513" stroke-width="0.4" opacity="0.7"/>
+  <line x1="4.5" y1="10.5" x2="16.5" y2="10.5" stroke="#A0522D" stroke-width="0.4" opacity="0.7"/>
+  <line x1="4.5" y1="13.2" x2="16.5" y2="13.2" stroke="#8B4513" stroke-width="0.4" opacity="0.7"/>
+  
+  <!-- Wood texture knots -->
+  <ellipse cx="6.5" cy="8" rx="0.8" ry="0.4" fill="#654321" opacity="0.6"/>
+  <ellipse cx="14.5" cy="9.5" rx="0.6" ry="0.3" fill="#654321" opacity="0.6"/>
+  
+  <!-- Armrests -->
+  <rect x="3" y="10" width="2" height="4" fill="url(#woodSeatGradient)" rx="0.5"/>
+  <rect x="16" y="10" width="2" height="4" fill="url(#woodSeatGradient)" rx="0.5"/>
+  
+  <!-- Prominent waste bin -->
+  <rect x="19" y="9" width="2.8" height="9" fill="url(#binGradient)" rx="0.4"/>
+  <rect x="19.1" y="9.2" width="2.6" height="0.8" fill="#555" rx="0.3"/>
+  
+  <!-- Bin lid -->
+  <ellipse cx="20.4" cy="9.5" rx="1.6" ry="0.5" fill="url(#binLidGradient)"/>
+  <ellipse cx="20.4" cy="9.2" rx="1.6" ry="0.5" fill="#777"/>
+  
+  <!-- Bin handle -->
+  <rect x="19.8" y="8.5" width="1.2" height="0.4" fill="#333" rx="0.2"/>
+  
+  <!-- Bin opening indicator -->
+  <ellipse cx="20.4" cy="9.8" rx="1.2" ry="0.3" fill="#000" opacity="0.6"/>
+  
+  <!-- Bin base -->
+  <ellipse cx="20.4" cy="18" rx="1.4" ry="0.3" fill="#222"/>
+  
+  <!-- Bin shadow -->
+  <ellipse cx="20.8" cy="19" rx="1.4" ry="0.6" fill="#000" opacity="0.3"/>
+  
+  <!-- Recycling symbol -->
+  <g stroke="#90EE90" stroke-width="0.3" fill="none" opacity="0.8">
+    <path d="M 19.8,12 Q 20.4,11.5 21,12"/>
+    <path d="M 20.6,13 Q 20.4,12.3 19.8,12.5"/>
+    <path d="M 20.2,13 Q 20.8,13.5 20.6,13"/>
+  </g>
+</svg>
