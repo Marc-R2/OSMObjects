@@ -1,8 +1,8 @@
-// Performance-optimized MoveCall with aggressive throttling and viewport optimization
+// Performance-optimized MoveCall with moderate throttling for responsive feel
 let moveCallTimeout = null;
 let lastMoveCallTime = 0;
-const MOVE_CALL_THROTTLE_MS = 500; // Increased throttling for better performance
-const VIEWPORT_OPTIMIZATION_THRESHOLD = 0.1; // Only reload if viewport changed significantly
+const MOVE_CALL_THROTTLE_MS = 250; // Moderate throttling for balanced performance and responsiveness
+const VIEWPORT_OPTIMIZATION_THRESHOLD = 0.05; // Only reload if viewport changed significantly
 
 function MoveCall(action) { //action: 0: map moved, 1: high zoom layer added, 2: low zoom layer added, 3: layer removed, 4: streetlights layer removed, 5: language updated
     // For immediate actions (layer changes), process immediately
@@ -14,7 +14,7 @@ function MoveCall(action) { //action: 0: map moved, 1: high zoom layer added, 2:
         return;
     }
     
-    // For map movements, use aggressive throttling
+    // For map movements, use moderate throttling
     const now = Date.now();
     
     // Clear any pending timeout
@@ -68,7 +68,7 @@ function executeMoveCall(action) {
 function loadXML(lat1, lon1, lat2, lon2, action) { //action: 0: map moved, 1: high zoom layer added, 2: low zoom layer added, 3: layer removed, 4: streetlights layer removed, 5: language updated
 
     let hasHighZoomLayer = false, hasLowZoomLayer = false, zoomWarning = 1;
-    let hasLightLayer = map.hasLayer(StreetLightsLayer) || map.hasLayer(AviationLayer) || map.hasLayer(LitStreetsLayer) || map.hasLayer(UnLitStreetsLayer) || map.hasLayer(StreetLightsLowZoomLayer);
+    let hasLightLayer = map.hasLayer(StreetLightsLayer) || map.hasLayer(AviationLayer) || map.hasLayer(LitStreetsLayer) || map.hasLayer(UnLitStreetsLayer) || map.hasLayer(StreetLightsLowZoomLayer) || map.hasLayer(BenchesLayer);
 
     // Special case: Low Zoom data loaded once
 	if (g_showStreetLightsLowZoomOnce && map.getZoom() < MIN_ZOOM_LOW_ZOOM) {
@@ -656,7 +656,25 @@ function finishDataProcessing() {
 }
 
 function parseOSM(data) {
-    // Use optimized parser for better performance
+    // Handle the case when called with false to clear layers
+    if (data === false) {
+        requestAnimationFrame(() => {
+            StreetLightsLayer.clearLayers();
+            AviationLayer.clearLayers();
+            LitStreetsLayer.clearLayers();
+            UnLitStreetsLayer.clearLayers();
+            
+            // Clear benches layer - handle both clustered and regular layers
+            if (CLUSTERING_SETTINGS.CLUSTER_BENCHES && BenchesLayer.clearMarkers) {
+                BenchesLayer.clearMarkers();
+            } else {
+                BenchesLayer.clearLayers();
+            }
+        });
+        return;
+    }
+    
+    // Use optimized parser for actual data
     parseOSMOptimized(data);
 }
 }
@@ -664,6 +682,12 @@ function parseOSM(data) {
 
 function parseOSMlowZoom(data)
 {
+	// Handle the case when called with false to clear the low zoom layer
+	if (data === false) {
+		StreetLightsLowZoomLayer.setData({max: 8, data:[]});
+		return;
+	}
+	
 	StreetLightsLowZoomLayer.setData({max: 8, data:[]});
 	//console.log(data);
 	let MarkerArray = new Array();

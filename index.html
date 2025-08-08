@@ -177,18 +177,18 @@
 				crossOrigin: true
 			});
 
-			// Initialize map with aggressive performance optimizations
+			// Initialize map with balanced performance optimizations for smooth interactions
 			var map = new L.Map('map', {
 				preferCanvas: true,
 				updateWhenIdle: true,
 				updateWhenZooming: false,
-				// Additional mobile optimizations
+				// Balanced mobile optimizations - keep some animations for better feel
 				tap: false, // Disable tap handler to improve touch performance
 				maxBoundsViscosity: 1.0, // Prevent over-panning
 				worldCopyJump: false, // Improve performance on world boundaries
-				markerZoomAnimation: false, // Disable marker animations for better performance
-				zoomAnimation: false, // Disable zoom animations on slower devices
-				fadeAnimation: false // Disable fade animations
+				markerZoomAnimation: true, // Re-enable marker animations for better zoom feel
+				zoomAnimation: true, // Re-enable zoom animations for smoother interaction
+				fadeAnimation: false // Keep fade animations disabled
 			});
 
 			// Initialize performance monitoring
@@ -321,7 +321,7 @@
 				};
 			}
 
-			const throttledMoveCall = throttle(MoveCall, 750); // Increased throttling for mobile performance
+			const throttledMoveCall = throttle(MoveCall, 250); // Moderate throttling for responsive performance
 			
 			//Trigger reload when layers are added or removed
 			StreetLightsLowZoomLayer.on('add',function(){throttledMoveCall(2);});
