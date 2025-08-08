@@ -135,37 +135,60 @@
 			var OverpassAttrib = 'Data via <a href="http://www.overpass-api.de/">Overpass API</a>';
 			var loadingOverlays = null;
 			
-			// Optimized tile layers with better caching
+			// Optimized tile layers with aggressive caching and mobile optimizations
 			var OSM_carto = L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 				maxZoom: 19,
 				attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | ' + OverpassAttrib,
 				updateWhenIdle: true,
-				keepBuffer: 2
+				updateWhenZooming: false,
+				keepBuffer: 4, // Increased buffer for better caching
+				maxNativeZoom: 18, // Prevent over-zooming
+				tileSize: 256,
+				crossOrigin: true
 			});
 			var OSM_de = L.tileLayer('https://{s}.tile.openstreetmap.de/tiles/osmde/{z}/{x}/{y}.png', {
 				maxZoom: 18,
 				attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | ' + OverpassAttrib,
 				updateWhenIdle: true,
-				keepBuffer: 2
+				updateWhenZooming: false,
+				keepBuffer: 4,
+				maxNativeZoom: 17,
+				tileSize: 256,
+				crossOrigin: true
 			});			
 			var OSM_fr = L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
 				maxZoom: 20,
 				attribution: '&copy; OpenStreetMap France | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | ' + OverpassAttrib,
 				updateWhenIdle: true,
-				keepBuffer: 2
+				updateWhenZooming: false,
+				keepBuffer: 4,
+				maxNativeZoom: 18,
+				tileSize: 256,
+				crossOrigin: true
 			});			
 			var OpenTopoMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
 				maxZoom: 17,
 				attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>) | ' + OverpassAttrib,
 				updateWhenIdle: true,
-				keepBuffer: 2
+				updateWhenZooming: false,
+				keepBuffer: 4,
+				maxNativeZoom: 16,
+				tileSize: 256,
+				crossOrigin: true
 			});
 
-			// Initialize map with performance optimizations
+			// Initialize map with aggressive performance optimizations
 			var map = new L.Map('map', {
 				preferCanvas: true,
 				updateWhenIdle: true,
-				updateWhenZooming: false
+				updateWhenZooming: false,
+				// Additional mobile optimizations
+				tap: false, // Disable tap handler to improve touch performance
+				maxBoundsViscosity: 1.0, // Prevent over-panning
+				worldCopyJump: false, // Improve performance on world boundaries
+				markerZoomAnimation: false, // Disable marker animations for better performance
+				zoomAnimation: false, // Disable zoom animations on slower devices
+				fadeAnimation: false // Disable fade animations
 			});
 
 			// Initialize performance monitoring
@@ -298,7 +321,7 @@
 				};
 			}
 
-			const throttledMoveCall = throttle(MoveCall, 250);
+			const throttledMoveCall = throttle(MoveCall, 750); // Increased throttling for mobile performance
 			
 			//Trigger reload when layers are added or removed
 			StreetLightsLowZoomLayer.on('add',function(){throttledMoveCall(2);});

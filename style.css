@@ -8,6 +8,13 @@ body{
 	/* Prevent text size adjustments on mobile */
 	-webkit-text-size-adjust: 100%;
 	text-size-adjust: 100%;
+	/* Additional mobile optimizations */
+	-webkit-tap-highlight-color: transparent;
+	-webkit-touch-callout: none;
+	/* Improve performance */
+	transform: translateZ(0);
+	-webkit-backface-visibility: hidden;
+	backface-visibility: hidden;
 }
 
 #map {
@@ -21,6 +28,16 @@ body{
 	-moz-user-select: none;
 	-ms-user-select: none;
 	user-select: none;
+	/* Additional performance optimizations */
+	transform: translateZ(0);
+	-webkit-backface-visibility: hidden;
+	backface-visibility: hidden;
+	/* Improve tile rendering */
+	image-rendering: -webkit-optimize-contrast;
+	image-rendering: optimize-contrast;
+	/* Reduce memory usage */
+	-webkit-transform-style: preserve-3d;
+	transform-style: preserve-3d;
 }
 
 /* Mobile optimizations */
