@@ -2,88 +2,108 @@
 	<head>
 		<title>Street Lamps in OSM</title>
 		<meta http-equiv="content-type" content="text/html; charset=utf-8">
-		<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no" />
 		<meta name="description" content="This map shows street lamps and their settings in the data of OpenStreetMap. It shows e.g. operators, reference numbers and details about the used lights.">
-
+		
+		<!-- Preload critical resources -->
+		<link rel="preload" href="leaflet/leaflet.js" as="script">
+		<link rel="preload" href="jquery/jquery-1.12.4.min.js" as="script">
+		<link rel="preload" href="js/settings.js" as="script">
+		
+		<!-- Critical CSS -->
 		<link rel="stylesheet" href="leaflet/leaflet.css" />
-		<link rel="stylesheet" href="leaflet/plugins/Control.Opacity/Control.Opacity.css" />
-		<link rel="stylesheet" href="leaflet/plugins/leaflet-locatecontrol/L.Control.Locate.min.css" />
-		<link rel="stylesheet" href="leaflet/plugins/leaflet-control-geocoder/Control.Geocoder.css" />
-		<link rel="stylesheet" href="jquery/jquery-ui.min.css" />
 		<link rel="stylesheet" href="style.css" />
+		
+		<!-- Non-critical CSS with preload hints -->
+		<link rel="preload" href="leaflet/plugins/Control.Opacity/Control.Opacity.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+		<link rel="preload" href="leaflet/plugins/leaflet-locatecontrol/L.Control.Locate.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+		<link rel="preload" href="leaflet/plugins/leaflet-control-geocoder/Control.Geocoder.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+		<link rel="preload" href="jquery/jquery-ui.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+		
+		<!-- Fallback for browsers that don't support preload -->
+		<noscript>
+			<link rel="stylesheet" href="leaflet/plugins/Control.Opacity/Control.Opacity.css" />
+			<link rel="stylesheet" href="leaflet/plugins/leaflet-locatecontrol/L.Control.Locate.min.css" />
+			<link rel="stylesheet" href="leaflet/plugins/leaflet-control-geocoder/Control.Geocoder.css" />
+			<link rel="stylesheet" href="jquery/jquery-ui.min.css" />
+		</noscript>
 
-		<!-- Load settings -->
-		<script src="js/settings.js" type="text/javascript"></script>
-		<!-- Load rectangle manager -->
-		<script src="js/rectangle_manager.js" type="text/javascript"></script>
-		<!-- Load clustering -->
-		<script src="js/clustering.js" type="text/javascript"></script>
-		<!-- Load enhanced location -->
-		<script src="js/enhanced_location.js" type="text/javascript"></script>
-		<!-- Load jquery -->
-		<script src="jquery/jquery-1.12.4.min.js"></script>
-		<script src="jquery/jquery-ui.min.js"></script>
-
-		<!-- Load i18next -->
-		<script src="i18next/i18next.min.js"></script>
-		<script src="i18next/i18nextHttpBackend.min.js"></script>
-		<script src="i18next/i18nextBrowserLanguageDetector.min.js"></script>
-		<script src="js/i18nextInit.js"></script>
-
-		<!-- Load leaflet -->
-		<script src="leaflet/leaflet.js"></script>
-		<script src="leaflet/plugins/leaflet-geolocation/leaflet-geolocation.js"></script>
-		<script src="leaflet/plugins/leaflet-locatecontrol/L.Control.Locate.min.js"></script>
-		<script src="leaflet/plugins/leaflet-hash/leaflet-hash.js"></script>
-		<script src="leaflet/plugins/Control.Opacity/Control.Opacity.js"></script>
-		<script src="leaflet/plugins/LanguageSelector/LanguageSelector.js"></script>
-		<script src="leaflet/plugins/leaflet-control-geocoder/Control.Geocoder.js"></script>	
-		<script src="leaflet/plugins/heatmap.js/build/heatmap.js"></script>
-		<script src="leaflet/plugins/heatmap.js/plugins/leaflet-heatmap/leaflet-heatmap.js"></script>	
-
-
-		<script src="js/parse_scripts.js" type="text/javascript"></script>
-		<script src="js/rectangle_tests.js" type="text/javascript"></script>
-		<script src="js/location_tests.js" type="text/javascript"></script>
-		<script src="js/bench_tests.js" type="text/javascript"></script>
+		<!-- Critical JavaScript - must load before DOM -->
+		<script src="js/settings.js"></script>
+		<script src="js/performance_tests.js" defer></script>
+		<script src="js/performance_unit_tests.js" defer></script>
 
 	</head>
 
 	<body style="margin:0px">
 		<div id="map" style="height: 100%"></div>
+		
+		<!-- Load core dependencies first -->
+		<script src="jquery/jquery-1.12.4.min.js"></script>
+		<script src="leaflet/leaflet.js"></script>
+		
+		<!-- Load leaflet plugins (needed before map initialization) -->
+		<script src="leaflet/plugins/heatmap.js/build/heatmap.js"></script>
+		<script src="leaflet/plugins/heatmap.js/plugins/leaflet-heatmap/leaflet-heatmap.js"></script>
+		<script src="leaflet/plugins/leaflet-geolocation/leaflet-geolocation.js"></script>
+		<script src="leaflet/plugins/leaflet-locatecontrol/L.Control.Locate.min.js"></script>
+		<script src="leaflet/plugins/leaflet-hash/leaflet-hash.js"></script>
+		<script src="leaflet/plugins/Control.Opacity/Control.Opacity.js"></script>
+		<script src="leaflet/plugins/LanguageSelector/LanguageSelector.js"></script>
+		<script src="leaflet/plugins/leaflet-control-geocoder/Control.Geocoder.js"></script>
+		
+		<!-- Load application modules without defer for dependency order -->
+		<script src="js/rectangle_manager.js"></script>
+		<script src="js/clustering.js"></script>
+		<script src="js/enhanced_location.js"></script>
+		<script src="js/optimized_data_loader.js"></script>
+		
+		<!-- Load UI libraries -->
+		<script src="jquery/jquery-ui.min.js" defer></script>
+		
+		<!-- Load i18next -->
+		<script src="i18next/i18next.min.js" defer></script>
+		<script src="i18next/i18nextHttpBackend.min.js" defer></script>
+		<script src="i18next/i18nextBrowserLanguageDetector.min.js" defer></script>
+		<script src="js/i18nextInit.js" defer></script>
+
+		<!-- Load application logic -->
+		<script src="js/parse_scripts.js"></script>
+		<script src="js/rectangle_tests.js" defer></script>
+		<script src="js/location_tests.js" defer></script>
+		<script src="js/bench_tests.js" defer></script>
+
 		<script>
-			MarkerArray = new Array();
-			let g_showStreetLightsLowZoomOnce = false
-			let g_showData = false;
+			// Performance optimization: Use requestAnimationFrame for smoother animations
+			window.MarkerArray = new Array();
+			window.g_showStreetLightsLowZoomOnce = false;
+			window.g_showData = false;
 			
+			// Initialize global variables needed by other scripts
+			window.g_opacityHasData = OPACITY_HAS_DATA;
+			window.g_opacityNoData = OPACITY_NO_DATA;
+			window.current_layer = null; // Will be set during initialization
+			window.loadingcounter = 0;
+			
+			// Optimized HeatMap configuration for better performance
 			var HeatMap_cfg = {
 			  "maxZoom" : 19,
 			  "minZoom" : MIN_ZOOM_LOW_ZOOM,
-			  // radius should be small ONLY if scaleRadius is true (or small radius is intended)
-			  "radius": 1	,
+			  "radius": 1,
 			  "maxOpacity": .5, 
 			  "minOpacity": .01, 
-			  // scales the radius based on map zoom
 			  "scaleRadius": false, 
 			  "blur": 0.99,
-			  // if set to false the heatmap uses the global maximum for colorization
-			  // if activated: uses the data maximum within the current map boundaries 
-			  //   (there will always be a red spot with useLocalExtremas true)
 			  "useLocalExtrema": true,
-			  // which field name in your data represents the latitude - default "lat"
 			  latField: 'lat',
-			  // which field name in your data represents the longitude - default "lng"
 			  lngField: 'lng',
-			  // which field name in your data represents the data value - default "value"
 			  valueField: 'count',
-			    gradient: {
-		    // enter n keys between 0 and 1 here
-		    // for gradient color customization
-			//	'.1': 'black',
+			  gradient: {
 				'.9': 'white'
 			  }
 			};
 			
+			// Initialize layers with performance optimizations
 			var StreetLightsLowZoomLayer = new HeatmapOverlay(HeatMap_cfg);
 			var StreetLightsLayer = new L.LayerGroup([],{
 				maxZoom : 19,
@@ -113,28 +133,46 @@
 				});
 
 			var OverpassAttrib = 'Data via <a href="http://www.overpass-api.de/">Overpass API</a>';
-			
-			// Initialize loading overlays after map is created
 			var loadingOverlays = null;
 			
+			// Optimized tile layers with better caching
 			var OSM_carto = L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 				maxZoom: 19,
-				attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | ' + OverpassAttrib
+				attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | ' + OverpassAttrib,
+				updateWhenIdle: true,
+				keepBuffer: 2
 			});
 			var OSM_de = L.tileLayer('https://{s}.tile.openstreetmap.de/tiles/osmde/{z}/{x}/{y}.png', {
 				maxZoom: 18,
-				attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | ' + OverpassAttrib
+				attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | ' + OverpassAttrib,
+				updateWhenIdle: true,
+				keepBuffer: 2
 			});			
 			var OSM_fr = L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
 				maxZoom: 20,
-				attribution: '&copy; OpenStreetMap France | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | ' + OverpassAttrib
+				attribution: '&copy; OpenStreetMap France | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | ' + OverpassAttrib,
+				updateWhenIdle: true,
+				keepBuffer: 2
 			});			
 			var OpenTopoMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
 				maxZoom: 17,
-				attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>) | ' + OverpassAttrib
+				attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>) | ' + OverpassAttrib,
+				updateWhenIdle: true,
+				keepBuffer: 2
 			});
 
-			var map = new L.Map('map');
+			// Initialize map with performance optimizations
+			var map = new L.Map('map', {
+				preferCanvas: true,
+				updateWhenIdle: true,
+				updateWhenZooming: false
+			});
+
+			// Initialize performance monitoring
+			let mapPerformanceMonitor;
+			if (window.MapPerformanceMonitor) {
+				mapPerformanceMonitor = new MapPerformanceMonitor(map);
+			}
 
 			// Initialize loading overlays after map creation
 			initLoadingOverlays(map);
@@ -168,49 +206,75 @@
 				"<span id='layer_error_areas'>Error Areas</span>": loadingOverlays.errorOverlayLayer
 			};
 
-			// Initialize enhanced location features
-			if (SHOW_GEOLOCATE_BUTTON) {
-				initializeEnhancedLocation(map);
+			// Initialize enhanced location features with delay for better performance
+			function initializeEnhancedLocationDeferred() {
+				if (SHOW_GEOLOCATE_BUTTON && window.initializeEnhancedLocation) {
+					initializeEnhancedLocation(map);
+				}
 			}
 
-			// add LanguageSelector
-			let LanguageSelector = new L.Control.LanguageSelector();
-			map.addControl(LanguageSelector);
+			// add LanguageSelector with lazy initialization
+			function initializeLanguageSelector() {
+				if (window.L && L.Control && L.Control.LanguageSelector) {
+					let LanguageSelector = new L.Control.LanguageSelector();
+					map.addControl(LanguageSelector);
+				} else {
+					setTimeout(initializeLanguageSelector, 100);
+				}
+			}
 			
 			// add maps
 			L.control.layers(baseMaps, overlayMaps_names).addTo(map);
 
-			// add opacity control
-			let g_opacityHasData = OPACITY_HAS_DATA; // opacity level when showing street lights
-			let g_opacityNoData = OPACITY_NO_DATA; // opacity level when not showing street lights
-			let current_layer = OSM_carto
-			let opacitySlider = new L.Control.opacitySlider();
-			map.addControl(opacitySlider);
-			opacitySlider.setOpacityLayer(current_layer);
+			// Set initial current layer
+			window.current_layer = OSM_carto;
 
-			// add geocoder
-			var geocoder = L.Control.geocoder({
-				defaultMarkGeocode: false
-			}).on('markgeocode', function(e) {
-				var bbox = e.geocode.bbox;
-				map.fitBounds(bbox,{maxZoom : 14});
-			})
-			geocoder.addTo(map);
-			
-			loadingcounter = 0;
+			// add opacity control with lazy initialization
+			function initializeOpacityControl() {
+				if (window.L && L.Control && L.Control.opacitySlider) {
+					let opacitySlider = new L.Control.opacitySlider();
+					map.addControl(opacitySlider);
+					opacitySlider.setOpacityLayer(current_layer);
+					
+					map.on('baselayerchange', function (e) {
+						current_layer = e.layer;
+						opacitySlider.setOpacityLayer(current_layer);		
+					});
+				} else {
+					setTimeout(initializeOpacityControl, 100);
+				}
+			}
 
+			// add geocoder with lazy initialization
+			function initializeGeocoder() {
+				if (window.L && L.Control && L.Control.geocoder) {
+					var geocoder = L.Control.geocoder({
+						defaultMarkGeocode: false
+					}).on('markgeocode', function(e) {
+						var bbox = e.geocode.bbox;
+						map.fitBounds(bbox,{maxZoom : 14});
+					});
+					geocoder.addTo(map);
+				} else {
+					setTimeout(initializeGeocoder, 100);
+				}
+			}
 
 			// default starting view of whole world
 			var ort = new L.LatLng(30, 10);
-			map.setView(ort, 3).addLayer(current_layer);
+			map.setView(ort, 3).addLayer(OSM_carto);
+			
 			// Request rough IP-based location if none is found in URL
 			if (document.URL.search(/#/)==-1){
-				L.GeoLocation.centerMapOnPosition(map, 8)
+				if (window.L && L.GeoLocation) {
+					L.GeoLocation.centerMapOnPosition(map, 8);
+				}
 			}
 
 			// Default layers
 			map.addLayer(StreetLightsLayer);
 			map.addLayer(AviationLayer);
+			
 			// Activate layer from the start when URL contains streets_lit or streets_unlit
 			if(window.location.search.indexOf("streets_lit") != -1) {
 				map.addLayer(LitStreetsLayer);
@@ -221,36 +285,66 @@
 
 			map.addLayer(BenchesLayer);
 			
+			// Optimized event handlers with throttling
+			function throttle(func, wait) {
+				let timeout;
+				return function executedFunction(...args) {
+					const later = () => {
+						clearTimeout(timeout);
+						func(...args);
+					};
+					clearTimeout(timeout);
+					timeout = setTimeout(later, wait);
+				};
+			}
+
+			const throttledMoveCall = throttle(MoveCall, 250);
+			
 			//Trigger reload when layers are added or removed
-			StreetLightsLowZoomLayer.on('add',function(){MoveCall(2);});
-			StreetLightsLowZoomLayer.on('remove',function(){MoveCall(3);});
-			StreetLightsLayer.on('add',function(){MoveCall(1);});
-			StreetLightsLayer.on('remove',function(){MoveCall(4);});
-			AviationLayer.on('add',function(){MoveCall(1);});
-			AviationLayer.on('remove',function(){MoveCall(3);});
-			LitStreetsLayer.on('add',function(){MoveCall(1);});
-			LitStreetsLayer.on('remove',function(){MoveCall(3);});
-			UnLitStreetsLayer.on('add',function(){MoveCall(1);});
-			UnLitStreetsLayer.on('remove',function(){MoveCall(3);});
-			BenchesLayer.on('add',function(){MoveCall(1);});
-			BenchesLayer.on('remove',function(){MoveCall(3);});
+			StreetLightsLowZoomLayer.on('add',function(){throttledMoveCall(2);});
+			StreetLightsLowZoomLayer.on('remove',function(){throttledMoveCall(3);});
+			StreetLightsLayer.on('add',function(){throttledMoveCall(1);});
+			StreetLightsLayer.on('remove',function(){throttledMoveCall(4);});
+			AviationLayer.on('add',function(){throttledMoveCall(1);});
+			AviationLayer.on('remove',function(){throttledMoveCall(3);});
+			LitStreetsLayer.on('add',function(){throttledMoveCall(1);});
+			LitStreetsLayer.on('remove',function(){throttledMoveCall(3);});
+			UnLitStreetsLayer.on('add',function(){throttledMoveCall(1);});
+			UnLitStreetsLayer.on('remove',function(){throttledMoveCall(3);});
+			BenchesLayer.on('add',function(){throttledMoveCall(1);});
+			BenchesLayer.on('remove',function(){throttledMoveCall(3);});
 			
 			//Permalink
-			var hash = new L.Hash(map, baseMaps, overlayMaps);
-			map.on('moveend',function(){MoveCall(0);});
+			function initializeHash() {
+				if (window.L && L.Hash) {
+					var hash = new L.Hash(map, baseMaps, overlayMaps);
+				} else {
+					setTimeout(initializeHash, 100);
+				}
+			}
+			
+			map.on('moveend', function(){throttledMoveCall(0);});
 
 			function openinJOSM(type, ID){
+				const coords = map.getBounds();
+				const lefttop = coords.getNorthWest();
+				const rightbottom = coords.getSouthEast();
 				$.ajax({
 				  url: "http://127.0.0.1:8111/load_and_zoom?left="+lefttop.lng+"&right="+rightbottom.lng+"&top="+lefttop.lat+"&bottom="+rightbottom.lat+"&select="+type+ID
 				});
 			}
 
-
-			map.on('baselayerchange', function (e) {
-				current_layer = e.layer;
-				opacitySlider.setOpacityLayer(current_layer);		
+			// Initialize components when dependencies are loaded
+			document.addEventListener('DOMContentLoaded', function() {
+				// Use requestAnimationFrame to defer initialization for better performance
+				requestAnimationFrame(() => {
+					setTimeout(initializeLanguageSelector, 50);
+					setTimeout(initializeOpacityControl, 100);
+					setTimeout(initializeGeocoder, 150);
+					setTimeout(initializeHash, 200);
+					setTimeout(initializeEnhancedLocationDeferred, 250);
+				});
 			});
-			
 		</script>
 		<div id="zoomwarning_cont" style="display:none">
 			<div id="zoomwarning">
