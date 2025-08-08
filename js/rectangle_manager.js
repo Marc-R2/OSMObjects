@@ -10,13 +10,197 @@ const RECTANGLE_CONFIG = {
     // Maximum retry attempts for failed rectangles
     MAX_RETRY_ATTEMPTS: 3,
     // Retry delay in milliseconds
-    RETRY_DELAY_MS: 5000
+    RETRY_DELAY_MS: 5000,
+    // TTL for cached rectangles in hours
+    CACHE_TTL_HOURS: 24,
+    // localStorage key prefix for namespacing
+    LOCALSTORAGE_PREFIX: 'osm_rect_cache_'
 };
 
 // Global cache for loaded rectangles
 let loadedRectangles = new Map(); // rectangleId -> {bounds, data, timestamp, status}
 let loadingRectangles = new Set(); // currently loading rectangle IDs
 let failedRectangles = new Map(); // rectangleId -> {attempts, lastFailTime}
+
+/**
+ * Checks if localStorage is available and functional
+ * @returns {boolean} True if localStorage can be used
+ */
+function isLocalStorageAvailable() {
+    try {
+        const test = 'test';
+        localStorage.setItem(test, test);
+        localStorage.removeItem(test);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+/**
+ * Generates localStorage key for a rectangle
+ * @param {string} rectangleId - Rectangle ID
+ * @returns {string} localStorage key
+ */
+function getLocalStorageKey(rectangleId) {
+    return RECTANGLE_CONFIG.LOCALSTORAGE_PREFIX + rectangleId;
+}
+
+/**
+ * Checks if a cached rectangle is still valid based on TTL
+ * @param {number} timestamp - Cache timestamp in milliseconds
+ * @param {number} ttlHours - TTL in hours (default: 24)
+ * @returns {boolean} True if cache is still valid
+ */
+function isRectangleCacheValid(timestamp, ttlHours = RECTANGLE_CONFIG.CACHE_TTL_HOURS) {
+    const now = Date.now();
+    const ttlMs = ttlHours * 60 * 60 * 1000; // Convert hours to milliseconds
+    return (now - timestamp) < ttlMs;
+}
+
+/**
+ * Saves rectangle data to localStorage
+ * @param {string} rectangleId - Rectangle ID
+ * @param {object} data - Rectangle data
+ * @param {number} timestamp - Cache timestamp
+ */
+function saveRectangleToLocalStorage(rectangleId, data, timestamp) {
+    if (!isLocalStorageAvailable()) {
+        return;
+    }
+    
+    try {
+        const cacheEntry = {
+            data: data,
+            timestamp: timestamp,
+            bounds: getRectangleBounds(rectangleId.replace('_lowzoom', ''))
+        };
+        
+        const key = getLocalStorageKey(rectangleId);
+        localStorage.setItem(key, JSON.stringify(cacheEntry));
+    } catch (e) {
+        console.warn('Failed to save rectangle to localStorage:', e);
+    }
+}
+
+/**
+ * Loads rectangle data from localStorage if valid
+ * @param {string} rectangleId - Rectangle ID
+ * @returns {object|null} Rectangle data if valid, null otherwise
+ */
+function loadRectangleFromLocalStorage(rectangleId) {
+    if (!isLocalStorageAvailable()) {
+        return null;
+    }
+    
+    try {
+        const key = getLocalStorageKey(rectangleId);
+        const cached = localStorage.getItem(key);
+        
+        if (!cached) {
+            return null;
+        }
+        
+        const cacheEntry = JSON.parse(cached);
+        
+        // Check if cache is still valid
+        if (!isRectangleCacheValid(cacheEntry.timestamp)) {
+            // Remove expired cache entry
+            localStorage.removeItem(key);
+            return null;
+        }
+        
+        return cacheEntry;
+    } catch (e) {
+        console.warn('Failed to load rectangle from localStorage:', e);
+        return null;
+    }
+}
+
+/**
+ * Removes expired cache entries from localStorage
+ * @returns {number} Number of expired entries removed
+ */
+function cleanExpiredLocalStorage() {
+    if (!isLocalStorageAvailable()) {
+        return 0;
+    }
+    
+    let removedCount = 0;
+    const prefix = RECTANGLE_CONFIG.LOCALSTORAGE_PREFIX;
+    
+    try {
+        // Get all localStorage keys
+        const keysToRemove = [];
+        
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith(prefix)) {
+                try {
+                    const cached = localStorage.getItem(key);
+                    if (cached) {
+                        const cacheEntry = JSON.parse(cached);
+                        if (!isRectangleCacheValid(cacheEntry.timestamp)) {
+                            keysToRemove.push(key);
+                        }
+                    }
+                } catch (e) {
+                    // If we can't parse it, remove it
+                    keysToRemove.push(key);
+                }
+            }
+        }
+        
+        // Remove expired entries
+        keysToRemove.forEach(key => {
+            localStorage.removeItem(key);
+            removedCount++;
+        });
+        
+    } catch (e) {
+        console.warn('Failed to clean expired localStorage entries:', e);
+    }
+    
+    return removedCount;
+}
+
+/**
+ * Loads all valid cached rectangles from localStorage into memory
+ * @returns {number} Number of rectangles loaded from cache
+ */
+function loadCacheFromLocalStorage() {
+    if (!isLocalStorageAvailable()) {
+        return 0;
+    }
+    
+    let loadedCount = 0;
+    const prefix = RECTANGLE_CONFIG.LOCALSTORAGE_PREFIX;
+    
+    try {
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith(prefix)) {
+                const rectangleId = key.substring(prefix.length);
+                const cacheEntry = loadRectangleFromLocalStorage(rectangleId);
+                
+                if (cacheEntry) {
+                    // Load into memory cache
+                    loadedRectangles.set(rectangleId, {
+                        bounds: cacheEntry.bounds,
+                        data: cacheEntry.data,
+                        timestamp: cacheEntry.timestamp,
+                        status: 'loaded'
+                    });
+                    loadedCount++;
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('Failed to load cache from localStorage:', e);
+    }
+    
+    return loadedCount;
+}
 
 /**
  * Generates a consistent rectangle ID based on grid coordinates
@@ -97,13 +281,31 @@ function getRectanglesInView(mapBounds, gridSize = RECTANGLE_CONFIG.GRID_SIZE_DE
 }
 
 /**
- * Checks if a rectangle has been loaded and cached
+ * Checks if a rectangle has been loaded and cached (memory or localStorage)
  * @param {string} rectangleId - Rectangle ID
  * @returns {boolean} True if rectangle is loaded
  */
 function isRectangleLoaded(rectangleId) {
-    return loadedRectangles.has(rectangleId) && 
-           loadedRectangles.get(rectangleId).status === 'loaded';
+    // First check memory cache
+    if (loadedRectangles.has(rectangleId) && 
+        loadedRectangles.get(rectangleId).status === 'loaded') {
+        return true;
+    }
+    
+    // Check localStorage if not in memory
+    const cacheEntry = loadRectangleFromLocalStorage(rectangleId);
+    if (cacheEntry) {
+        // Load into memory cache for faster future access
+        loadedRectangles.set(rectangleId, {
+            bounds: cacheEntry.bounds,
+            data: cacheEntry.data,
+            timestamp: cacheEntry.timestamp,
+            status: 'loaded'
+        });
+        return true;
+    }
+    
+    return false;
 }
 
 /**
@@ -151,12 +353,19 @@ function markRectangleLoaded(rectangleId, data) {
     loadingRectangles.delete(rectangleId);
     failedRectangles.delete(rectangleId);
     
-    loadedRectangles.set(rectangleId, {
+    const timestamp = Date.now();
+    const rectangleInfo = {
         bounds: getRectangleBounds(rectangleId.replace('_lowzoom', '')),
         data: data,
-        timestamp: Date.now(),
+        timestamp: timestamp,
         status: 'loaded'
-    });
+    };
+    
+    // Save to memory cache
+    loadedRectangles.set(rectangleId, rectangleInfo);
+    
+    // Save to localStorage for persistence
+    saveRectangleToLocalStorage(rectangleId, data, timestamp);
     
     updateLoadingOverlays();
 }
@@ -198,23 +407,75 @@ function getRectangleData(rectangleIds) {
 }
 
 /**
- * Clears all cached rectangle data
+ * Clears all cached rectangle data (memory and localStorage)
+ * @param {boolean} clearLocalStorage - Whether to clear localStorage too (default: true)
  */
-function clearRectangleCache() {
+function clearRectangleCache(clearLocalStorage = true) {
     loadedRectangles.clear();
     loadingRectangles.clear();
     failedRectangles.clear();
+    
+    if (clearLocalStorage && isLocalStorageAvailable()) {
+        try {
+            const prefix = RECTANGLE_CONFIG.LOCALSTORAGE_PREFIX;
+            const keysToRemove = [];
+            
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith(prefix)) {
+                    keysToRemove.push(key);
+                }
+            }
+            
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+        } catch (e) {
+            console.warn('Failed to clear localStorage cache:', e);
+        }
+    }
 }
 
 /**
- * Gets statistics about the rectangle cache
+ * Gets statistics about the rectangle cache (memory and localStorage)
  * @returns {object} Cache statistics
  */
 function getRectangleCacheStats() {
+    let localStorageCount = 0;
+    let localStorageSize = 0;
+    
+    if (isLocalStorageAvailable()) {
+        try {
+            const prefix = RECTANGLE_CONFIG.LOCALSTORAGE_PREFIX;
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith(prefix)) {
+                    localStorageCount++;
+                    const value = localStorage.getItem(key);
+                    if (value) {
+                        localStorageSize += value.length;
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('Failed to get localStorage stats:', e);
+        }
+    }
+    
     return {
-        loaded: loadedRectangles.size,
-        loading: loadingRectangles.size,
-        failed: failedRectangles.size
+        memory: {
+            loaded: loadedRectangles.size,
+            loading: loadingRectangles.size,
+            failed: failedRectangles.size
+        },
+        localStorage: {
+            count: localStorageCount,
+            sizeBytes: localStorageSize,
+            available: isLocalStorageAvailable()
+        },
+        total: {
+            loaded: loadedRectangles.size,
+            loading: loadingRectangles.size,
+            failed: failedRectangles.size
+        }
     };
 }
 
@@ -336,4 +597,35 @@ function getLoadingOverlayLayers() {
         loadedOverlayLayer,
         errorOverlayLayer
     };
+}
+
+/**
+ * Initialize the rectangle cache system
+ * Loads cached data from localStorage and cleans expired entries
+ * Should be called on page load
+ */
+function initializeRectangleCache() {
+    console.log('Initializing rectangle cache system...');
+    
+    // Clean expired entries first
+    const expiredCount = cleanExpiredLocalStorage();
+    if (expiredCount > 0) {
+        console.log(`Cleaned ${expiredCount} expired cache entries`);
+    }
+    
+    // Load valid cache entries into memory
+    const loadedCount = loadCacheFromLocalStorage();
+    if (loadedCount > 0) {
+        console.log(`Loaded ${loadedCount} rectangles from localStorage cache`);
+    }
+    
+    // Set up periodic cleanup (every hour)
+    setInterval(() => {
+        const cleaned = cleanExpiredLocalStorage();
+        if (cleaned > 0) {
+            console.log(`Periodic cleanup: removed ${cleaned} expired cache entries`);
+        }
+    }, 60 * 60 * 1000); // 1 hour
+    
+    console.log('Rectangle cache system initialized');
 }

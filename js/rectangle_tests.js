@@ -86,10 +86,12 @@ function runRectangleManagerTests() {
         
         assert(shouldRetryRectangle(testId), "Rectangle should be retried initially (first time)");
         markRectangleFailed(testId);
-        assert(shouldRetryRectangle(testId), "Rectangle should be retried after first failure (time check needed)");
         
-        // Simulate multiple failures
-        for (let i = 0; i < 4; i++) {
+        // After first failure, it should NOT be retried immediately due to delay
+        assert(!shouldRetryRectangle(testId), "Rectangle should not be retried immediately after first failure (delay required)");
+        
+        // Simulate multiple failures to exceed max attempts
+        for (let i = 0; i < 3; i++) {
             markRectangleFailed(testId);
         }
         assert(!shouldRetryRectangle(testId), "Rectangle should not be retried after max failures");
@@ -103,9 +105,12 @@ function runRectangleManagerTests() {
         markRectangleFailed("rect_52.0200_13.0200");
         
         const stats = getRectangleCacheStats();
-        assert(stats.loading === 1, "Cache stats show correct loading count");
-        assert(stats.loaded === 1, "Cache stats show correct loaded count");
-        assert(stats.failed === 1, "Cache stats show correct failed count");
+        assert(stats.memory.loading === 1, "Cache stats show correct loading count");
+        assert(stats.memory.loaded === 1, "Cache stats show correct loaded count");  
+        assert(stats.memory.failed === 1, "Cache stats show correct failed count");
+        assert(stats.total.loading === 1, "Total stats show correct loading count");
+        assert(stats.total.loaded === 1, "Total stats show correct loaded count");
+        assert(stats.total.failed === 1, "Total stats show correct failed count");
     }
     
     console.log(`\nTest Results: ${passed} passed, ${failed} failed`);
@@ -163,6 +168,216 @@ function testRectangleSystemWithMap() {
 // Make test functions available globally for manual testing
 window.runRectangleManagerTests = runRectangleManagerTests;
 window.testRectangleSystemWithMap = testRectangleSystemWithMap;
+
+/**
+ * Test TTL and localStorage functionality
+ */
+function testRectangleTTLAndLocalStorage() {
+    console.log("\nTesting Rectangle TTL and localStorage Features...");
+    
+    let passed = 0;
+    let failed = 0;
+    
+    function assert(condition, message) {
+        if (condition) {
+            console.log(`✓ ${message}`);
+            passed++;
+        } else {
+            console.error(`✗ ${message}`);
+            failed++;
+        }
+    }
+    
+    // Test 1: localStorage availability
+    {
+        const available = isLocalStorageAvailable();
+        console.log(`localStorage available: ${available}`);
+        if (available) {
+            assert(true, "localStorage is available for testing");
+        } else {
+            console.warn("localStorage not available - some tests will be skipped");
+        }
+    }
+    
+    // Test 2: TTL validation
+    {
+        const now = Date.now();
+        const validTime = now - (12 * 60 * 60 * 1000); // 12 hours ago
+        const expiredTime = now - (25 * 60 * 60 * 1000); // 25 hours ago
+        
+        assert(isRectangleCacheValid(now), "Current timestamp is valid");
+        assert(isRectangleCacheValid(validTime), "12-hour old timestamp is valid");
+        assert(!isRectangleCacheValid(expiredTime), "25-hour old timestamp is expired");
+        assert(isRectangleCacheValid(expiredTime, 48), "25-hour old timestamp is valid with 48h TTL");
+    }
+    
+    // Test 3: localStorage key generation
+    {
+        const rectId = "rect_52.5000_13.4000";
+        const key = getLocalStorageKey(rectId);
+        assert(key.startsWith(RECTANGLE_CONFIG.LOCALSTORAGE_PREFIX), "localStorage key has correct prefix");
+        assert(key.includes(rectId), "localStorage key contains rectangle ID");
+    }
+    
+    // Test 4: localStorage save and load (if available)
+    if (isLocalStorageAvailable()) {
+        clearRectangleCache(true); // Clear both memory and localStorage
+        
+        const testId = "rect_52.5000_13.4000";
+        const testData = { nodes: ["test1", "test2"], ways: ["way1"] };
+        const timestamp = Date.now();
+        
+        // Save to localStorage
+        saveRectangleToLocalStorage(testId, testData, timestamp);
+        
+        // Load from localStorage
+        const loaded = loadRectangleFromLocalStorage(testId);
+        assert(loaded !== null, "Rectangle data loaded from localStorage");
+        assert(loaded.timestamp === timestamp, "Timestamp preserved in localStorage");
+        assert(JSON.stringify(loaded.data) === JSON.stringify(testData), "Data preserved in localStorage");
+        
+        // Test loading into memory cache
+        const wasLoaded = isRectangleLoaded(testId);
+        assert(wasLoaded, "Rectangle loaded from localStorage into memory cache");
+        
+        // Clean up
+        localStorage.removeItem(getLocalStorageKey(testId));
+    }
+    
+    // Test 5: Cache expiration cleanup
+    if (isLocalStorageAvailable()) {
+        const expiredId = "rect_52.6000_13.5000";
+        const validId = "rect_52.6100_13.5100";
+        const expiredTimestamp = Date.now() - (25 * 60 * 60 * 1000); // 25 hours ago
+        const validTimestamp = Date.now() - (12 * 60 * 60 * 1000); // 12 hours ago
+        
+        // Save expired and valid entries
+        saveRectangleToLocalStorage(expiredId, {test: "expired"}, expiredTimestamp);
+        saveRectangleToLocalStorage(validId, {test: "valid"}, validTimestamp);
+        
+        // Clean expired entries
+        const removedCount = cleanExpiredLocalStorage();
+        assert(removedCount >= 1, "At least one expired entry was cleaned");
+        
+        // Check that valid entry remains
+        const validEntry = loadRectangleFromLocalStorage(validId);
+        assert(validEntry !== null, "Valid entry remains after cleanup");
+        
+        // Check that expired entry is gone
+        const expiredEntry = loadRectangleFromLocalStorage(expiredId);
+        assert(expiredEntry === null, "Expired entry was removed");
+        
+        // Clean up
+        localStorage.removeItem(getLocalStorageKey(validId));
+    }
+    
+    // Test 6: Enhanced cache statistics
+    {
+        clearRectangleCache(true);
+        const stats = getRectangleCacheStats();
+        
+        assert(typeof stats.memory === 'object', "Stats include memory section");
+        assert(typeof stats.localStorage === 'object', "Stats include localStorage section");
+        assert(typeof stats.total === 'object', "Stats include total section");
+        assert(typeof stats.localStorage.available === 'boolean', "Stats show localStorage availability");
+        assert(typeof stats.localStorage.count === 'number', "Stats show localStorage count");
+        assert(typeof stats.localStorage.sizeBytes === 'number', "Stats show localStorage size");
+    }
+    
+    // Test 7: Integration with existing loading system
+    {
+        clearRectangleCache(true);
+        const testId = "rect_52.7000_13.6000";
+        const testData = { integration: "test" };
+        
+        // Use existing markRectangleLoaded function (should save to localStorage)
+        markRectangleLoaded(testId, testData);
+        
+        // Clear memory cache only
+        clearRectangleCache(false);
+        assert(!loadedRectangles.has(testId), "Memory cache cleared");
+        
+        // Check if data can be loaded from localStorage
+        const loaded = isRectangleLoaded(testId);
+        assert(loaded, "Rectangle loaded from localStorage after memory clear");
+        
+        // Verify data is restored to memory
+        assert(loadedRectangles.has(testId), "Rectangle restored to memory cache");
+        
+        // Clean up
+        clearRectangleCache(true);
+    }
+    
+    console.log(`\nTTL and localStorage Test Results: ${passed} passed, ${failed} failed`);
+    return failed === 0;
+}
+
+/**
+ * Test cache initialization and lifecycle
+ */
+function testRectangleCacheInitialization() {
+    console.log("\nTesting Rectangle Cache Initialization...");
+    
+    let passed = 0;
+    let failed = 0;
+    
+    function assert(condition, message) {
+        if (condition) {
+            console.log(`✓ ${message}`);
+            passed++;
+        } else {
+            console.error(`✗ ${message}`);
+            failed++;
+        }
+    }
+    
+    if (!isLocalStorageAvailable()) {
+        console.warn("localStorage not available - initialization tests skipped");
+        return true;
+    }
+    
+    // Test 1: Initial cache loading
+    {
+        clearRectangleCache(true);
+        
+        // Manually add some cache entries to localStorage
+        const testData = [
+            { id: "rect_52.8000_13.7000", data: { test: "init1" }, timestamp: Date.now() - (6 * 60 * 60 * 1000) }, // 6h ago
+            { id: "rect_52.8100_13.7100", data: { test: "init2" }, timestamp: Date.now() - (30 * 60 * 60 * 1000) }, // 30h ago (expired)
+            { id: "rect_52.8200_13.7200", data: { test: "init3" }, timestamp: Date.now() - (1 * 60 * 60 * 1000) }  // 1h ago
+        ];
+        
+        testData.forEach(item => {
+            saveRectangleToLocalStorage(item.id, item.data, item.timestamp);
+        });
+        
+        // Simulate initialization
+        const expiredCount = cleanExpiredLocalStorage();
+        const loadedCount = loadCacheFromLocalStorage();
+        
+        assert(expiredCount >= 1, "Expired entries cleaned during initialization");
+        assert(loadedCount >= 2, "Valid entries loaded during initialization");
+        
+        // Verify memory cache has the valid entries
+        assert(isRectangleLoaded("rect_52.8000_13.7000"), "Valid entry 1 loaded into memory");
+        assert(isRectangleLoaded("rect_52.8200_13.7200"), "Valid entry 3 loaded into memory");
+        assert(!isRectangleLoaded("rect_52.8100_13.7100"), "Expired entry not loaded into memory");
+        
+        // Clean up
+        clearRectangleCache(true);
+    }
+    
+    // Test 2: Configuration validation
+    {
+        assert(typeof RECTANGLE_CONFIG.CACHE_TTL_HOURS === 'number', "TTL configuration is numeric");
+        assert(RECTANGLE_CONFIG.CACHE_TTL_HOURS > 0, "TTL is positive");
+        assert(typeof RECTANGLE_CONFIG.LOCALSTORAGE_PREFIX === 'string', "localStorage prefix is string");
+        assert(RECTANGLE_CONFIG.LOCALSTORAGE_PREFIX.length > 0, "localStorage prefix is not empty");
+    }
+    
+    console.log(`\nCache Initialization Test Results: ${passed} passed, ${failed} failed`);
+    return failed === 0;
+}
 
 /**
  * Test clustering functionality
@@ -279,7 +494,7 @@ function testLoadingOverlays() {
         
         markRectangleFailed("rect_52.5100_13.4100");
         const stats = getRectangleCacheStats();
-        assert(stats.failed === 1, "Failed rectangle tracked with overlay update");
+        assert(stats.memory.failed === 1, "Failed rectangle tracked with overlay update");
     }
     
     console.log(`\nLoading Overlay Test Results: ${passed} passed, ${failed} failed`);
@@ -331,6 +546,8 @@ function runAllTests() {
     
     const results = [
         runRectangleManagerTests(),
+        testRectangleTTLAndLocalStorage(),
+        testRectangleCacheInitialization(),
         testClusteringFeatures(),
         testLoadingOverlays(),
         testEndpointFailover()
@@ -346,6 +563,8 @@ function runAllTests() {
 }
 
 // Make new test functions available globally
+window.testRectangleTTLAndLocalStorage = testRectangleTTLAndLocalStorage;
+window.testRectangleCacheInitialization = testRectangleCacheInitialization;
 window.testClusteringFeatures = testClusteringFeatures;
 window.testLoadingOverlays = testLoadingOverlays;
 window.testEndpointFailover = testEndpointFailover;
