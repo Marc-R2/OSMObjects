@@ -1,9 +1,63 @@
 body{
 	font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+	/* Optimize for mobile performance */
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	/* Improve touch scrolling */
+	-webkit-overflow-scrolling: touch;
+	/* Prevent text size adjustments on mobile */
+	-webkit-text-size-adjust: 100%;
+	text-size-adjust: 100%;
+	/* Additional mobile optimizations */
+	-webkit-tap-highlight-color: transparent;
+	-webkit-touch-callout: none;
+	/* Improve performance */
+	transform: translateZ(0);
+	-webkit-backface-visibility: hidden;
+	backface-visibility: hidden;
 }
 
 #map {
 	background-color: #000000; 
+	/* Optimize map rendering */
+	will-change: transform;
+	/* Improve touch interactions */
+	touch-action: pan-x pan-y;
+	/* Prevent accidental text selection during map interactions */
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	/* Additional performance optimizations */
+	transform: translateZ(0);
+	-webkit-backface-visibility: hidden;
+	backface-visibility: hidden;
+	/* Improve tile rendering */
+	image-rendering: -webkit-optimize-contrast;
+	image-rendering: optimize-contrast;
+	/* Reduce memory usage */
+	-webkit-transform-style: preserve-3d;
+	transform-style: preserve-3d;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+	body {
+		font-size: 14px;
+	}
+	
+	#map {
+		/* Optimize for smaller screens */
+		image-rendering: -webkit-optimize-contrast;
+		image-rendering: crisp-edges;
+	}
+}
+
+/* High DPI display optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 2dppx) {
+	#map {
+		image-rendering: -webkit-optimize-contrast;
+	}
 }
 
 button.leaflet-control-geocoder-icon {
